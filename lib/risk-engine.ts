@@ -1,0 +1,176 @@
+import type { RiskLevel, ScanData, ScanReport, Warning } from "./types";
+
+const severityWeight: Record<RiskLevel, number> = {
+  LOW: 10,
+  MEDIUM: 25,
+  HIGH: 45,
+  CRITICAL: 70
+};
+
+function addWarning(warnings: Warning[], warning: Warning) {
+  warnings.push(warning);
+}
+
+function levelFromScore(score: number): RiskLevel {
+  if (score >= 85) return "CRITICAL";
+  if (score >= 60) return "HIGH";
+  if (score >= 30) return "MEDIUM";
+  return "LOW";
+}
+
+function scoreWarnings(warnings: Warning[]) {
+  return Math.min(
+    100,
+    warnings.reduce((total, warning) => total + severityWeight[warning.severity], 0)
+  );
+}
+
+export function buildRiskReport(data: ScanData): ScanReport {
+  const warnings: Warning[] = [];
+  const liquidity = data.market?.liquidityUsd ?? 0;
+  const ageHours = data.market?.pairAgeHours;
+
+  if (data.chain === "solana") {
+    if (data.solana?.mintAuthorityActive) {
+      addWarning(warnings, {
+        severity: "HIGH",
+        title: "Mint authority is still active",
+        explanation: "The creator can potentially mint more tokens and dilute holders.",
+        recommendation: "Treat this as high risk unless the project has a clear reason and trusted multisig controls."
+      });
+    }
+
+    if (data.solana?.freezeAuthorityActive) {
+      addWarning(warnings, {
+        severity: "HIGH",
+        title: "Freeze authority is still active",
+        explanation: "The authority can freeze token accounts, which may block transfers for selected wallets.",
+        recommendation: "Avoid buying unless freeze authority is expected and publicly justified."
+      });
+    }
+
+    if ((data.solana?.top10HolderPct ?? 0) > 70) {
+      addWarning(warnings, {
+        severity: "HIGH",
+        title: "Top holders control most supply",
+        explanation: `Top token accounts hold about ${data.solana?.top10HolderPct?.toFixed(1)}% of supply.`,
+        recommendation: "Check whether these are liquidity, burn, or team wallets before entering."
+      });
+    }
+  }
+
+  if (data.chain !== "solana") {
+    if (data.evm?.honeypot) {
+      addWarning(warnings, {
+        severity: "CRITICAL",
+        title: "Possible honeypot detected",
+        explanation: "The token may block selling or make selling economically impossible.",
+        recommendation: "Do not buy unless an independent manual review proves sells are safe."
+      });
+    }
+
+    if (data.evm?.canBlacklist) {
+      addWarning(warnings, {
+        severity: "HIGH",
+        title: "Blacklist controls detected",
+        explanation: "The owner may be able to block selected wallets from transferring or selling.",
+        recommendation: "Avoid tokens where blacklist powers are controlled by an unknown owner."
+      });
+    }
+
+    if (data.evm?.mintable) {
+      addWarning(warnings, {
+        severity: "HIGH",
+        title: "Mint capability detected",
+        explanation: "The contract may allow privileged accounts to create more supply.",
+        recommendation: "Confirm the minter is renounced, timelocked, or controlled by a trusted multisig."
+      });
+    }
+
+    if (data.evm?.ownerActive) {
+      addWarning(warnings, {
+        severity: "MEDIUM",
+        title: "Owner privileges are still active",
+        explanation: "A privileged owner can still change important token settings.",
+        recommendation: "Look for renounced ownership, timelock controls, or transparent multisig governance."
+      });
+    }
+
+    if (data.evm?.proxy) {
+      addWarning(warnings, {
+        severity: "MEDIUM",
+        title: "Upgradeable proxy detected",
+        explanation: "The implementation can potentially be changed after users buy the token.",
+        recommendation: "Verify who controls upgrades and whether upgrades are timelocked."
+      });
+    }
+
+    if ((data.evm?.sellTax ?? 0) >= 15 || (data.evm?.buyTax ?? 0) >= 15) {
+      addWarning(warnings, {
+        severity: "HIGH",
+        title: "High trading tax",
+        explanation: `Detected buy tax ${data.evm?.buyTax ?? 0}% and sell tax ${data.evm?.sellTax ?? 0}%.`,
+        recommendation: "High taxes can trap traders or drain value. Avoid unless expected."
+      });
+    }
+  }
+
+  if (liquidity > 0 && liquidity < 10_000) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "Low liquidity",
+      explanation: `Detected liquidity is about $${Math.round(liquidity).toLocaleString()}. Small trades may move price heavily.`,
+      recommendation: "Use caution and check whether liquidity is locked or burned."
+    });
+  }
+
+  if (typeof ageHours === "number" && ageHours < 24) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "Very new trading pair",
+      explanation: `The main pair appears to be about ${Math.max(1, Math.round(ageHours))} hour(s) old.`,
+      recommendation: "New tokens have limited history. Wait for more trading data if possible."
+    });
+  }
+
+  if (!data.market?.pairAddress) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "No active DEX pair found",
+      explanation: "RiskLens could not find a tracked market pair for this token.",
+      recommendation: "Verify liquidity manually before buying."
+    });
+  }
+
+  const score = scoreWarnings(warnings);
+  const riskLevel = levelFromScore(score);
+
+  return {
+    ...data,
+    riskLevel,
+    score,
+    warnings,
+    summary: buildSummary(riskLevel, warnings),
+    generatedAt: new Date().toISOString()
+  };
+}
+
+function buildSummary(riskLevel: RiskLevel, warnings: Warning[]) {
+  if (warnings.length === 0) {
+    return "No major automated warnings were found, but this is not a full audit.";
+  }
+
+  if (riskLevel === "CRITICAL") {
+    return "Critical risk. The token has one or more red flags that may cause loss of funds or block selling.";
+  }
+
+  if (riskLevel === "HIGH") {
+    return "High risk. Important owner, authority, liquidity, or distribution risks were detected.";
+  }
+
+  if (riskLevel === "MEDIUM") {
+    return "Medium risk. Some warning signs exist and should be checked before buying.";
+  }
+
+  return "Low automated risk. Continue with normal due diligence before buying.";
+}
