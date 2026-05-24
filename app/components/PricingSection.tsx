@@ -1,4 +1,12 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { WaitlistModal } from "./WaitlistModal";
+
 export function PricingSection() {
+  const [waitlistPlan, setWaitlistPlan] = useState<string | null>(null);
+
   return (
     <section className="pricing-section">
       <div className="section-head">
@@ -12,6 +20,7 @@ export function PricingSection() {
       <div className="pricing-grid">
         <PlanCard
           cta="Current plan"
+          ctaHref="/scan"
           description="Fast token checks for casual research."
           features={["50 scans per day", "Shareable risk reports", "Stored scan history", "Solana and EVM coverage"]}
           name="Free"
@@ -23,6 +32,7 @@ export function PricingSection() {
           featured
           features={["Unlimited scans", "Token watchlist", "Liquidity and authority alerts", "Advanced wallet activity signals"]}
           name="Pro"
+          onCtaClick={() => setWaitlistPlan("pro")}
           price="$19/mo"
         />
         <PlanCard
@@ -30,6 +40,7 @@ export function PricingSection() {
           description="Automated risk checks for groups and tooling."
           features={["Telegram group bot", "Batch scans", "API access", "Webhook alerts"]}
           name="Community and API"
+          onCtaClick={() => setWaitlistPlan("community")}
           price="Custom"
         />
       </div>
@@ -41,23 +52,31 @@ export function PricingSection() {
         </div>
         <span>Coming next</span>
       </div>
+
+      {waitlistPlan && (
+        <WaitlistModal plan={waitlistPlan} onClose={() => setWaitlistPlan(null)} />
+      )}
     </section>
   );
 }
 
 function PlanCard({
   cta,
+  ctaHref,
   description,
   featured = false,
   features,
   name,
+  onCtaClick,
   price
 }: {
   cta: string;
+  ctaHref?: string;
   description: string;
   featured?: boolean;
   features: string[];
   name: string;
+  onCtaClick?: () => void;
   price: string;
 }) {
   return (
@@ -72,7 +91,11 @@ function PlanCard({
           <li key={feature}>{feature}</li>
         ))}
       </ul>
-      <button type="button">{cta}</button>
+      {ctaHref ? (
+        <Link href={ctaHref} className="plan-cta-link">{cta}</Link>
+      ) : (
+        <button type="button" onClick={onCtaClick}>{cta}</button>
+      )}
     </article>
   );
 }

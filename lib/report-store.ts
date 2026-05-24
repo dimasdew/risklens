@@ -1,19 +1,19 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServerClient, isSupabaseConfigured } from "./supabase-server";
 import type { ReportSummary, ScanReport } from "./types";
 
 const reportsDir = process.env.VERCEL ? path.join("/tmp", "risklens", "reports") : path.join(process.cwd(), ".data", "reports");
 const tableName = "scan_reports";
 
-export async function saveReport(report: ScanReport): Promise<ScanReport> {
+export async function saveReport(report: ScanReport, userId?: string): Promise<ScanReport> {
   const reportId = createReportId(report);
   const storedReport = { ...report, reportId };
 
   if (isSupabaseConfigured()) {
     try {
-      const client = getSupabaseClient();
+      const client = getSupabaseServerClient();
       const { error } = await client.from(tableName).upsert({
         id: reportId,
         chain: storedReport.chain,
@@ -24,7 +24,8 @@ export async function saveReport(report: ScanReport): Promise<ScanReport> {
         score: storedReport.score,
         liquidity_usd: storedReport.market?.liquidityUsd,
         report: storedReport,
-        created_at: storedReport.generatedAt
+        created_at: storedReport.generatedAt,
+        user_id: userId ?? null
       });
 
       if (!error) return storedReport;
@@ -46,7 +47,7 @@ export async function getReport(reportId: string): Promise<ScanReport | null> {
 
   if (isSupabaseConfigured()) {
     try {
-      const client = getSupabaseClient();
+      const client = getSupabaseServerClient();
       const { data, error } = await client.from(tableName).select("report").eq("id", reportId).maybeSingle();
 
       if (!error && data?.report) return data.report as ScanReport;
@@ -59,15 +60,21 @@ export async function getReport(reportId: string): Promise<ScanReport | null> {
   return getLocalReport(reportId);
 }
 
-export async function listReports(limit = 10): Promise<ReportSummary[]> {
+export async function listReports(limit = 10, userId?: string): Promise<ReportSummary[]> {
   if (isSupabaseConfigured()) {
     try {
-      const client = getSupabaseClient();
-      const { data, error } = await client
+      const client = getSupabaseServerClient();
+      let query = client
         .from(tableName)
         .select("id, chain, address, token_name, token_symbol, risk_level, score, liquidity_usd, created_at")
         .order("created_at", { ascending: false })
         .limit(limit);
+
+      if (userId) {
+        query = query.eq("user_id", userId);
+      }
+
+      const { data, error } = await query;
 
       if (!error && data) {
         return data.map((row) => ({
@@ -147,31 +154,6 @@ function createReportId(report: ScanReport) {
     .update(`${report.chain}:${report.address}:${report.generatedAt}:${report.score}`)
     .digest("hex")
     .slice(0, 16);
-}
-
-function isSupabaseConfigured() {
-  return Boolean(process.env.SUPABASE_URL && getSupabaseKey());
-}
-
-function getSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = getSupabaseKey();
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Supabase is not configured.");
-  }
-
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
-
-function getSupabaseKey() {
-  return (
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-  );
 }
 
 function isValidReportId(reportId: string) {

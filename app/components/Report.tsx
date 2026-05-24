@@ -5,13 +5,16 @@ import { chainLabels } from "@/lib/chains";
 import { formatAge, formatUsd } from "@/lib/format";
 import { getSecuritySignals } from "@/lib/signals";
 import type { ScanReport } from "@/lib/types";
+import { useAuth } from "./AuthProvider";
 import { Metric } from "./Metric";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { useToast } from "./Toast";
 
 export function Report({ report }: { report: ScanReport }) {
   const [copied, setCopied] = useState(false);
+  const [watchlisted, setWatchlisted] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const riskClass = `risk-badge risk-${report.riskLevel.toLowerCase()}`;
   const sharePath = report.reportId ? `/report/${report.reportId}` : undefined;
   const shareUrl = typeof window !== "undefined" && sharePath ? `${window.location.origin}${sharePath}` : sharePath;
@@ -84,8 +87,78 @@ export function Report({ report }: { report: ScanReport }) {
         <Metric label="Generated" value={new Date(report.generatedAt).toLocaleString()} />
         <Metric label="Pair age" value={formatAge(report.market?.pairAgeHours)} />
       </div>
+
+      <div className="report-actions">
+        <span className="report-actions-label">Recommended next steps</span>
+        <div className="report-actions-row">
+          <NextActionBadge report={report} />
+          {user && (
+            <button
+              className={`action-btn${watchlisted ? " action-btn-active" : ""}`}
+              type="button"
+              onClick={async () => {
+                const { getSupabaseBrowserClient } = await import("@/lib/supabase-browser");
+                const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+                const token = session.session?.access_token;
+                if (!token) return;
+
+                if (watchlisted) {
+                  await fetch(`/api/watchlist?chain=${report.chain}&address=${report.address}`, {
+                    method: "DELETE",
+                    headers: { authorization: `Bearer ${token}` }
+                  });
+                  setWatchlisted(false);
+                  toast("Removed from watchlist.", "info");
+                } else {
+                  await fetch("/api/watchlist", {
+                    method: "POST",
+                    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ chain: report.chain, address: report.address, tokenName: report.tokenName, tokenSymbol: report.tokenSymbol })
+                  });
+                  setWatchlisted(true);
+                  toast("Added to watchlist.", "success");
+                }
+              }}
+            >
+              {watchlisted ? "\u2713 Watchlisted" : "\u2606 Watchlist"}
+            </button>
+          )}
+          <button className="action-btn" type="button" onClick={copyShareLink}>
+            Share report
+          </button>
+        </div>
+      </div>
     </section>
   );
+}
+
+function NextActionBadge({ report }: { report: ScanReport }) {
+  if (report.riskLevel === "CRITICAL") {
+    return <span className="action-badge action-badge-critical">Avoid this token</span>;
+  }
+  if (report.riskLevel === "HIGH") {
+    return <span className="action-badge action-badge-high">Proceed with extreme caution</span>;
+  }
+
+  const hasAuthority = report.warnings.some((w) =>
+    w.title.toLowerCase().includes("authority") || w.title.toLowerCase().includes("mint")
+  );
+  if (hasAuthority) {
+    return <span className="action-badge action-badge-high">Verify authority is revoked</span>;
+  }
+
+  const hasLiquidity = report.warnings.some((w) =>
+    w.title.toLowerCase().includes("liquidity") || w.title.toLowerCase().includes("lp")
+  );
+  if (hasLiquidity) {
+    return <span className="action-badge action-badge-medium">Check LP lock status</span>;
+  }
+
+  if (report.riskLevel === "MEDIUM") {
+    return <span className="action-badge action-badge-medium">Monitor before entry</span>;
+  }
+
+  return <span className="action-badge action-badge-low">Lower risk detected</span>;
 }
 
 function formatConfidence(confidence: ScanReport["confidence"]) {

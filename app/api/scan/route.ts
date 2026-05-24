@@ -5,6 +5,7 @@ import { saveReport } from "@/lib/report-store";
 import { buildRiskReport } from "@/lib/risk-engine";
 import { checkAndIncrementScanLimit } from "@/lib/scan-limit";
 import type { Chain } from "@/lib/types";
+import { createClient } from "@supabase/supabase-js";
 
 const maxAddressLength = 64;
 
@@ -39,7 +40,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const limit = await checkAndIncrementScanLimit(getClientIdentifier(request));
+    const userId = await extractUserId(request);
+    const limit = await checkAndIncrementScanLimit(getClientIdentifier(request), userId ?? undefined);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: `Free scan limit reached. You can run ${limit.limit} scans per day on the free plan.` },
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     const data = await fetchScanData(chain, address);
-    const report = await saveReport(buildRiskReport(data));
+    const report = await saveReport(buildRiskReport(data), userId ?? undefined);
     return NextResponse.json(report, {
       headers: { "x-scan-limit": String(limit.limit), "x-scan-remaining": String(limit.remaining) }
     });
@@ -73,6 +75,26 @@ function getClientIdentifier(request: Request) {
   }
 
   return `ip:${ipAddress}`;
+}
+
+async function extractUserId(request: Request): Promise<string | null> {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+
+  const token = authHeader.slice(7);
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return null;
+
+  try {
+    const client = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+    const { data } = await client.auth.getUser(token);
+    return data.user?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function isValidAddress(chain: Chain, address: string) {

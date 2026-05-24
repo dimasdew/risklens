@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { chainLabels } from "@/lib/chains";
 import type { Chain, ReportSummary, ScanReport } from "@/lib/types";
+import { useAuth } from "../components/AuthProvider";
 import { Navbar } from "../components/Navbar";
 import { RecentScans } from "../components/RecentScans";
 import { Report } from "../components/Report";
@@ -10,6 +11,7 @@ import { Report } from "../components/Report";
 const scanSteps = ["Reading market data", "Checking authorities", "Analyzing holders", "Calculating risk"];
 
 export default function ScanPage() {
+  const { user } = useAuth();
   const [chain, setChain] = useState<Chain>("solana");
   const [address, setAddress] = useState("");
   const [report, setReport] = useState<ScanReport | null>(null);
@@ -48,9 +50,22 @@ export default function ScanPage() {
     setLoading(true);
 
     try {
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+        "x-risklens-device-id": getDeviceId()
+      };
+
+      if (user) {
+        const { getSupabaseBrowserClient } = await import("@/lib/supabase-browser");
+        const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+        if (session.session?.access_token) {
+          headers.authorization = `Bearer ${session.session.access_token}`;
+        }
+      }
+
       const response = await fetch("/api/scan", {
         method: "POST",
-        headers: { "content-type": "application/json", "x-risklens-device-id": getDeviceId() },
+        headers,
         body: JSON.stringify({ chain, address })
       });
       const payload = await response.json();

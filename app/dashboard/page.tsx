@@ -5,29 +5,74 @@ import Link from "next/link";
 import { useAuth } from "../components/AuthProvider";
 import { Navbar } from "../components/Navbar";
 import { useToast } from "../components/Toast";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { chainLabels } from "@/lib/chains";
 import { formatUsd } from "@/lib/format";
-import type { ReportSummary } from "@/lib/types";
+import type { Chain, ReportSummary } from "@/lib/types";
+
+type WatchlistItem = {
+  id: string;
+  chain: Chain;
+  address: string;
+  token_name: string | null;
+  token_symbol: string | null;
+  created_at: string;
+};
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [reports, setReports] = useState<ReportSummary[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void loadReports();
+    void loadWatchlist();
   }, []);
 
   async function loadReports() {
     try {
-      const response = await fetch("/api/reports");
+      const headers: Record<string, string> = {};
+      const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+      if (session.session?.access_token) {
+        headers.authorization = `Bearer ${session.session.access_token}`;
+      }
+
+      const response = await fetch("/api/reports", { headers });
       if (!response.ok) return;
       const payload = (await response.json()) as { reports?: ReportSummary[] };
       setReports(payload.reports ?? []);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadWatchlist() {
+    try {
+      const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+      if (!session.session?.access_token) return;
+
+      const response = await fetch("/api/watchlist", {
+        headers: { authorization: `Bearer ${session.session.access_token}` }
+      });
+      if (!response.ok) return;
+      const payload = (await response.json()) as { items?: WatchlistItem[] };
+      setWatchlist(payload.items ?? []);
+    } catch { /* ignore */ }
+  }
+
+  async function removeFromWatchlist(chain: string, address: string) {
+    const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+    if (!session.session?.access_token) return;
+
+    await fetch(`/api/watchlist?chain=${chain}&address=${address}`, {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${session.session.access_token}` }
+    });
+
+    setWatchlist((prev) => prev.filter((item) => !(item.chain === chain && item.address === address)));
+    toast("Removed from watchlist.", "info");
   }
 
   async function handleSignOut() {
@@ -67,6 +112,33 @@ export default function DashboardPage() {
         <Link href="/reset-password" className="btn-ghost">Change password</Link>
         <button className="btn-ghost" onClick={handleSignOut} type="button">Sign out</button>
       </section>
+
+      {watchlist.length > 0 && (
+        <section className="dashboard-history">
+          <h2>Watchlist</h2>
+          <div className="recent-list">
+            {watchlist.map((item) => (
+              <div className="recent-item" key={item.id}>
+                <div>
+                  <strong>
+                    {item.token_name ?? "Unknown Token"} {item.token_symbol ? `(${item.token_symbol})` : ""}
+                  </strong>
+                  <span>
+                    {chainLabels[item.chain]} · {shortAddress(item.address)} · Added {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <button
+                  className="action-btn"
+                  type="button"
+                  onClick={() => removeFromWatchlist(item.chain, item.address)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="dashboard-history">
         <h2>Your scan history</h2>

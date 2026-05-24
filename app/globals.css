@@ -1135,6 +1135,152 @@ h1 {
   background: rgba(255, 101, 125, 0.08);
 }
 
+/* ── Report actions ── */
+.report-actions {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 20px;
+  margin-top: 8px;
+}
+
+.report-actions-label {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.report-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.action-btn {
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--muted);
+}
+
+.action-btn-active {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.action-badge {
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.action-badge-critical {
+  background: rgba(255, 101, 125, 0.12);
+  color: var(--red);
+  border: 1px solid rgba(255, 101, 125, 0.3);
+}
+
+.action-badge-high {
+  background: rgba(255, 180, 80, 0.12);
+  color: #ffb450;
+  border: 1px solid rgba(255, 180, 80, 0.3);
+}
+
+.action-badge-medium {
+  background: rgba(255, 220, 100, 0.1);
+  color: #ffd864;
+  border: 1px solid rgba(255, 220, 100, 0.25);
+}
+
+.action-badge-low {
+  background: rgba(72, 245, 164, 0.1);
+  color: var(--green);
+  border: 1px solid rgba(72, 245, 164, 0.25);
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 24px;
+  animation: fade-in 200ms ease;
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 32px;
+  animation: modal-in 250ms ease;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.plan-cta-link {
+  display: block;
+  text-align: center;
+  padding: 14px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--green);
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background 150ms ease;
+}
+
+.plan-cta-link:hover {
+  background: rgba(72, 245, 164, 0.06);
+}
+
 /* ── Dashboard ── */
 .dashboard-header {
   padding: 24px 0 8px;
