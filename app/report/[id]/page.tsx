@@ -14,13 +14,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const report = await getReport(id);
 
   if (!report) {
-    return { title: "Report not found — RiskLens" };
+    return { title: "Report not found | RiskLens" };
   }
 
   const tokenLabel = report.tokenName
     ? `${report.tokenName}${report.tokenSymbol ? ` (${report.tokenSymbol})` : ""}`
     : "Unknown Token";
-  const title = `${tokenLabel} — ${report.riskLevel} Risk — RiskLens`;
+  const title = `${tokenLabel} | ${report.riskLevel} Risk | RiskLens`;
   const description = `${chainLabels[report.chain]} token risk report: score ${report.score}/100, ${report.riskLevel} risk. ${report.summary}`;
 
   return {
