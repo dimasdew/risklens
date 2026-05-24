@@ -42,6 +42,36 @@ function checkLocalLimit(identifierHash: string, usageDate: string): ScanLimitRe
 async function checkSupabaseLimit(identifierHash: string, usageDate: string): Promise<ScanLimitResult> {
   const client = getSupabaseServerClient();
   const id = `${usageDate}:${identifierHash}`;
+
+  const { data, error } = await client.rpc("increment_scan_usage", {
+    p_id: id,
+    p_identifier_hash: identifierHash,
+    p_usage_date: usageDate,
+    p_limit: freeScanLimit
+  });
+
+  if (error) {
+    // Fallback to read-then-write if RPC doesn't exist yet
+    if (error.code === "42883") {
+      return await checkSupabaseLimitFallback(identifierHash, usageDate);
+    }
+    throw error;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  const allowed = Boolean(row?.allowed);
+  const count = Number(row?.scan_count ?? 0);
+
+  return {
+    allowed,
+    remaining: allowed ? Math.max(0, freeScanLimit - count) : 0,
+    limit: freeScanLimit
+  };
+}
+
+async function checkSupabaseLimitFallback(identifierHash: string, usageDate: string): Promise<ScanLimitResult> {
+  const client = getSupabaseServerClient();
+  const id = `${usageDate}:${identifierHash}`;
   const { data } = await client.from("scan_usage").select("scan_count").eq("id", id).maybeSingle();
   const current = Number(data?.scan_count ?? 0);
 

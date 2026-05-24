@@ -27,40 +27,40 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    async function loadReports() {
+      try {
+        const headers: Record<string, string> = {};
+        const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+        if (session.session?.access_token) {
+          headers.authorization = `Bearer ${session.session.access_token}`;
+        }
+
+        const response = await fetch("/api/reports", { headers });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { reports?: ReportSummary[] };
+        setReports(payload.reports ?? []);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function loadWatchlist() {
+      try {
+        const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+        if (!session.session?.access_token) return;
+
+        const response = await fetch("/api/watchlist", {
+          headers: { authorization: `Bearer ${session.session.access_token}` }
+        });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { items?: WatchlistItem[] };
+        setWatchlist(payload.items ?? []);
+      } catch { /* ignore */ }
+    }
+
     void loadReports();
     void loadWatchlist();
   }, []);
-
-  async function loadReports() {
-    try {
-      const headers: Record<string, string> = {};
-      const { data: session } = await getSupabaseBrowserClient().auth.getSession();
-      if (session.session?.access_token) {
-        headers.authorization = `Bearer ${session.session.access_token}`;
-      }
-
-      const response = await fetch("/api/reports", { headers });
-      if (!response.ok) return;
-      const payload = (await response.json()) as { reports?: ReportSummary[] };
-      setReports(payload.reports ?? []);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadWatchlist() {
-    try {
-      const { data: session } = await getSupabaseBrowserClient().auth.getSession();
-      if (!session.session?.access_token) return;
-
-      const response = await fetch("/api/watchlist", {
-        headers: { authorization: `Bearer ${session.session.access_token}` }
-      });
-      if (!response.ok) return;
-      const payload = (await response.json()) as { items?: WatchlistItem[] };
-      setWatchlist(payload.items ?? []);
-    } catch { /* ignore */ }
-  }
 
   async function removeFromWatchlist(chain: string, address: string) {
     const { data: session } = await getSupabaseBrowserClient().auth.getSession();
