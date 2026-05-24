@@ -5,19 +5,19 @@ import { ToastProvider } from "./components/Toast";
 
 export const metadata: Metadata = {
   title: {
-    default: "RiskLens | Token Risk Scanner for Solana & EVM",
-    template: "%s | RiskLens"
+    default: "RiskLens - Token Risk Scanner for Solana & EVM",
+    template: "%s - RiskLens"
   },
   description: "Scan any token before you trade. RiskLens checks liquidity, authorities, honeypot signals, taxes, and holder concentration across Solana, Ethereum, Base, and BNB Chain.",
   openGraph: {
-    title: "RiskLens | Token Risk Scanner for Solana & EVM",
+    title: "RiskLens - Token Risk Scanner for Solana & EVM",
     description: "Scan any token before you trade. Free automated risk reports with plain-language warnings.",
     type: "website",
     siteName: "RiskLens"
   },
   twitter: {
     card: "summary_large_image",
-    title: "RiskLens | Token Risk Scanner",
+    title: "RiskLens - Token Risk Scanner",
     description: "Assess token risk before you trade. Free for Solana & EVM."
   }
 };
