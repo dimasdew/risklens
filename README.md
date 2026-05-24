@@ -68,6 +68,7 @@ Copy `.env.example` to `.env.local` if you want to use a custom Solana RPC or Su
 ```bash
 SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY=your-helius-api-key
+MORALIS_API_KEY=your-moralis-api-key
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
@@ -79,6 +80,7 @@ You can also use `SUPABASE_SERVICE_ROLE_KEY` server-side instead of `SUPABASE_PU
 - DexScreener: token pair, liquidity, price, volume, pair age
 - Solana RPC: mint account, token supply, largest accounts
 - Helius: Solana recent transaction activity signals
+- Moralis: EVM token holders and recent transfer activity signals
 - GoPlus Security: EVM token owner, proxy, mint, tax, honeypot signals
 
 ## Architecture

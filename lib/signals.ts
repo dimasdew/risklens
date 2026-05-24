@@ -6,6 +6,8 @@ export function getSecuritySignals(report: ScanReport) {
   const devHoldingPct = Math.max(report.evm?.creatorBalancePct ?? 0, report.evm?.ownerBalancePct ?? 0);
   const buys1h = report.market?.buys1h ?? 0;
   const sells1h = report.market?.sells1h ?? 0;
+  const recentActiveWallets = report.chain === "solana" ? report.solana?.recentActiveWallets : report.evm?.recentActiveWallets;
+  const recentTxCount = report.chain === "solana" ? report.solana?.recentTxCount : report.evm?.recentTxCount;
 
   return [
     { label: "Top 10 holders", value: formatPct(top10HolderPct) },
@@ -13,8 +15,8 @@ export function getSecuritySignals(report: ScanReport) {
     { label: "Dev/owner holding", value: devHoldingPct > 0 ? formatPct(devHoldingPct) : "Unknown" },
     { label: "Holder count", value: report.evm?.holderCount ? report.evm.holderCount.toLocaleString() : "Unknown" },
     { label: "1h buys/sells", value: buys1h || sells1h ? `${buys1h}/${sells1h}` : "Unknown" },
-    { label: "Recent wallets", value: report.solana?.recentActiveWallets ? report.solana.recentActiveWallets.toLocaleString() : "Unknown" },
-    { label: "Recent txs", value: report.solana?.recentTxCount ? report.solana.recentTxCount.toLocaleString() : "Unknown" },
+    { label: "Recent wallets", value: recentActiveWallets ? recentActiveWallets.toLocaleString() : "Unknown" },
+    { label: "Recent txs", value: recentTxCount ? recentTxCount.toLocaleString() : "Unknown" },
     { label: "Authority risk", value: getAuthorityRisk(report) }
   ];
 }

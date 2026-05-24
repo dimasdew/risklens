@@ -56,6 +56,9 @@ export type EvmSecurityData = {
   creatorAddress?: string;
   creatorBalancePct?: number;
   ownerBalancePct?: number;
+  recentTxCount?: number;
+  recentActiveWallets?: number;
+  recentTransferWallets?: number;
 };
 
 export type ScanData = {

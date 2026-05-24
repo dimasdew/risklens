@@ -216,6 +216,24 @@ export function buildRiskReport(data: ScanData): ScanReport {
     });
   }
 
+  if (data.chain !== "solana" && typeof ageHours === "number" && ageHours < 24 && (data.evm?.recentActiveWallets ?? 0) >= 75) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "High recent EVM wallet activity",
+      explanation: `Moralis found about ${data.evm?.recentActiveWallets} active wallets in recent token transfers.`,
+      recommendation: "Review recent transfers for fresh wallets, snipers, or coordinated activity before entering."
+    });
+  }
+
+  if (data.chain !== "solana" && (data.evm?.recentTxCount ?? 0) >= 100 && (data.evm?.recentTransferWallets ?? 0) < 20) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "Concentrated EVM transfer activity",
+      explanation: `Recent Moralis data shows ${data.evm?.recentTxCount} transfers but only about ${data.evm?.recentTransferWallets} active transfer wallets.`,
+      recommendation: "This can indicate repeated transfers among a small wallet set. Check wallet clusters manually."
+    });
+  }
+
   if (!data.market?.pairAddress) {
     addWarning(warnings, {
       severity: "MEDIUM",

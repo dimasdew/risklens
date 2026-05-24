@@ -13,9 +13,15 @@ const dexChainNames: Record<Chain, string> = {
   solana: "solana"
 };
 
+const moralisChainNames: Record<Exclude<Chain, "solana">, string> = {
+  ethereum: "eth",
+  bsc: "bsc",
+  base: "base"
+};
+
 export async function fetchScanData(chain: Chain, address: string): Promise<ScanData> {
   const sources = new Set<string>();
-  const [market, chainSecurity, solanaActivity] = await Promise.all([
+  const [market, chainSecurity, solanaActivity, evmActivity] = await Promise.all([
     fetchDexScreener(chain, address).catch(() => undefined).then((data) => {
       if (data) sources.add("DexScreener");
       return data;
@@ -34,10 +40,17 @@ export async function fetchScanData(chain: Chain, address: string): Promise<Scan
           if (data) sources.add("Helius");
           return data;
         })
+      : Promise.resolve(undefined),
+    chain !== "solana"
+      ? fetchMoralisActivity(chain, address).catch(() => undefined).then((data) => {
+          if (data) sources.add("Moralis");
+          return data;
+        })
       : Promise.resolve(undefined)
   ]);
 
   const solanaSecurity = chain === "solana" ? { ...(chainSecurity as SolanaSecurityData | undefined), ...solanaActivity } : undefined;
+  const evmSecurity = chain !== "solana" ? { ...(chainSecurity as EvmSecurityData | undefined), ...evmActivity } : undefined;
 
   return {
     chain,
@@ -46,7 +59,7 @@ export async function fetchScanData(chain: Chain, address: string): Promise<Scan
     tokenSymbol: market?.tokenSymbol,
     market,
     solana: solanaSecurity,
-    evm: chain !== "solana" ? (chainSecurity as EvmSecurityData | undefined) : undefined,
+    evm: evmSecurity,
     dataSources: Array.from(sources)
   };
 }
@@ -204,6 +217,49 @@ async function fetchGoPlusSecurity(chain: Exclude<Chain, "solana">, address: str
   };
 }
 
+async function fetchMoralisActivity(chain: Exclude<Chain, "solana">, address: string): Promise<EvmSecurityData | undefined> {
+  const apiKey = process.env.MORALIS_API_KEY;
+  if (!apiKey) return undefined;
+
+  const moralisChain = moralisChainNames[chain];
+  const [owners, transfers] = await Promise.all([
+    moralisGet(`https://deep-index.moralis.io/api/v2.2/erc20/${address}/owners?chain=${moralisChain}&limit=100`, apiKey),
+    moralisGet(`https://deep-index.moralis.io/api/v2.2/erc20/${address}/transfers?chain=${moralisChain}&limit=100`, apiKey)
+  ]);
+
+  const ownerRows = getResultArray(owners);
+  const transferRows = getResultArray(transfers);
+  const activeWallets = new Set<string>();
+
+  for (const transfer of transferRows) {
+    const from = getStringField(transfer, "from_address");
+    const to = getStringField(transfer, "to_address");
+    if (from) activeWallets.add(from);
+    if (to) activeWallets.add(to);
+  }
+
+  const holderCount = parseOptionalNumber((owners as { total?: unknown } | undefined)?.total) ?? ownerRows.length;
+
+  return {
+    holderCount: holderCount || undefined,
+    largestHolderPct: getMoralisLargestHolderPct(ownerRows),
+    top10HolderPct: getMoralisTopHolderPct(ownerRows, 10),
+    recentTxCount: transferRows.length,
+    recentActiveWallets: activeWallets.size,
+    recentTransferWallets: activeWallets.size
+  };
+}
+
+async function moralisGet(url: string, apiKey: string) {
+  const response = await fetch(url, {
+    headers: { "X-API-Key": apiKey, accept: "application/json" },
+    next: { revalidate: 20 }
+  });
+
+  if (!response.ok) return undefined;
+  return response.json();
+}
+
 function findGoPlusResult(result: unknown, address: string) {
   if (!result || typeof result !== "object") return undefined;
   const entries = Object.entries(result as Record<string, unknown>);
@@ -244,4 +300,34 @@ function getTopHolderPct(value: unknown, count: number) {
 function getLargestHolderPct(value: unknown) {
   if (!Array.isArray(value)) return undefined;
   return parsePercent((value[0] as { percent?: unknown } | undefined)?.percent);
+}
+
+function getResultArray(value: unknown): Array<Record<string, unknown>> {
+  if (!value || typeof value !== "object") return [];
+  const result = (value as { result?: unknown }).result;
+  return Array.isArray(result) ? (result as Array<Record<string, unknown>>) : [];
+}
+
+function getStringField(value: Record<string, unknown>, key: string) {
+  const field = value[key];
+  return typeof field === "string" ? field : undefined;
+}
+
+function getMoralisTopHolderPct(holders: Array<Record<string, unknown>>, count: number) {
+  const total = holders.slice(0, count).reduce((sum, holder) => sum + getMoralisHolderPct(holder), 0);
+  return total > 0 ? total : undefined;
+}
+
+function getMoralisLargestHolderPct(holders: Array<Record<string, unknown>>) {
+  const value = holders[0] ? getMoralisHolderPct(holders[0]) : 0;
+  return value > 0 ? value : undefined;
+}
+
+function getMoralisHolderPct(holder: Record<string, unknown>) {
+  return (
+    parsePercent(holder.percentage_relative_to_total_supply) ??
+    parsePercent(holder.percentage_of_total_supply) ??
+    parsePercent(holder.balance_percentage) ??
+    0
+  );
 }
