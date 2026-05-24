@@ -150,9 +150,9 @@ create table scan_usage (
 ## Business Model Direction
 
 - Free scanner for growth: 50 scans per device per day
-- Pro watchlist and alerts for active traders
-- Telegram bot subscription for crypto communities
-- API access for wallets, bots, dashboards, and launchpads
+- Pro plan: unlimited scans, token watchlist, risk change alerts, advanced wallet activity signals
+- Community plan: Telegram group bot, batch scans, moderation-oriented warning thresholds
+- API plan: risk score endpoint, batch scans, webhooks for wallets, bots, dashboards, and launchpads
 - Paid audit-lite reports for indie token teams
 
 ## Product Direction

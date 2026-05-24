@@ -226,6 +226,10 @@ h1 {
   margin-top: 34px;
 }
 
+.pricing-section {
+  margin-top: 54px;
+}
+
 .section-head {
   display: flex;
   align-items: end;
@@ -294,6 +298,111 @@ h1 {
 .mini-risk-medium { background: rgba(255, 202, 92, 0.16); color: var(--amber); }
 .mini-risk-high { background: rgba(255, 132, 92, 0.16); color: #ff9d68; }
 .mini-risk-critical { background: rgba(255, 101, 125, 0.17); color: var(--red); }
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.plan-card {
+  display: flex;
+  min-height: 360px;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: rgba(16, 22, 39, 0.72);
+  padding: 22px;
+}
+
+.plan-card-featured {
+  border-color: rgba(72, 245, 164, 0.5);
+  background: linear-gradient(180deg, rgba(72, 245, 164, 0.12), rgba(16, 22, 39, 0.72));
+  box-shadow: 0 22px 70px rgba(72, 245, 164, 0.08);
+}
+
+.plan-name {
+  display: block;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.plan-card strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 36px;
+  letter-spacing: -0.06em;
+}
+
+.plan-card p,
+.watchlist-preview p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.plan-card ul {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 22px 0;
+  padding: 0;
+}
+
+.plan-card li {
+  color: var(--muted);
+}
+
+.plan-card li::before {
+  color: var(--green);
+  content: "• ";
+}
+
+.plan-card button {
+  border: 1px solid rgba(72, 245, 164, 0.42);
+  border-radius: 16px;
+  background: rgba(72, 245, 164, 0.12);
+  color: var(--green);
+  cursor: pointer;
+  font-weight: 900;
+  padding: 13px 14px;
+}
+
+.plan-card-featured button {
+  border: 0;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  color: #03100b;
+}
+
+.watchlist-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 18px;
+}
+
+.watchlist-preview strong,
+.watchlist-preview span {
+  display: block;
+}
+
+.watchlist-preview span {
+  border: 1px solid rgba(255, 202, 92, 0.36);
+  border-radius: 999px;
+  color: var(--amber);
+  font-size: 13px;
+  font-weight: 900;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
 
 .stat-card strong {
   display: block;
@@ -519,7 +628,8 @@ h1 {
 
   .stats,
   .grid,
-  .signal-grid {
+  .signal-grid,
+  .pricing-grid {
     grid-template-columns: 1fr;
   }
 
@@ -530,7 +640,8 @@ h1 {
 
   .section-head,
   .recent-item,
-  .recent-meta {
+  .recent-meta,
+  .watchlist-preview {
     align-items: stretch;
     flex-direction: column;
   }
