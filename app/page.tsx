@@ -165,6 +165,7 @@ function RecentScans({ reports }: { reports: ReportSummary[] }) {
 }
 
 function Report({ report }: { report: ScanReport }) {
+  const [copied, setCopied] = useState(false);
   const riskClass = `risk-badge risk-${report.riskLevel.toLowerCase()}`;
   const sharePath = report.reportId ? `/report/${report.reportId}` : undefined;
   const shareUrl = typeof window !== "undefined" && sharePath ? `${window.location.origin}${sharePath}` : sharePath;
@@ -172,6 +173,8 @@ function Report({ report }: { report: ScanReport }) {
   async function copyShareLink() {
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
   }
 
   return (
@@ -189,13 +192,13 @@ function Report({ report }: { report: ScanReport }) {
       </div>
 
       {shareUrl ? (
-        <div className="share-box">
+        <div className={`share-box${copied ? " share-box-copied" : ""}`}>
           <div>
             <strong>Shareable report</strong>
             <span>{shareUrl}</span>
           </div>
-          <button type="button" onClick={copyShareLink}>
-            Copy Link
+          <button className={copied ? "copied" : ""} type="button" onClick={copyShareLink}>
+            {copied ? "Copied" : "Copy Link"}
           </button>
         </div>
       ) : null}

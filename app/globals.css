@@ -303,6 +303,14 @@ h1 {
   margin-top: 18px;
   padding: 14px;
   background: rgba(72, 245, 164, 0.07);
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.share-box-copied {
+  border-color: rgba(72, 245, 164, 0.72);
+  background: rgba(72, 245, 164, 0.13);
+  box-shadow: 0 0 0 4px rgba(72, 245, 164, 0.08), 0 18px 45px rgba(72, 245, 164, 0.08);
+  transform: translateY(-1px);
 }
 
 .share-box strong,
@@ -326,6 +334,17 @@ h1 {
   font-weight: 800;
   padding: 10px 12px;
   white-space: nowrap;
+  transition: background 180ms ease, color 180ms ease, transform 120ms ease, border-color 180ms ease;
+}
+
+.share-box button:hover {
+  transform: translateY(-1px);
+}
+
+.share-box button.copied {
+  border-color: rgba(72, 245, 164, 0.9);
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  color: #03100b;
 }
 
 .result-head {
