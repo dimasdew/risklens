@@ -1,53 +1,70 @@
 # RiskLens
 
-RiskLens is a new token risk scanner for Solana and EVM. It helps traders, communities, and builders check token risks before buying, promoting, or integrating a new asset.
+Token risk scanner for Solana and EVM chains. Helps traders, communities, and builders check token risks before buying, promoting, or integrating.
 
-Tagline:
+**Live:** [risklens-labs.vercel.app](https://risklens-labs.vercel.app)
 
-```text
-Assess token risk before you trade.
-```
+## What it does
 
-RiskLens turns technical token signals into a plain-language report: risk score, warnings, impact, and recommended action.
-
-## Product Flow
+Paste a contract address, choose a chain, get a plain-language risk report with score, warnings, and recommended action.
 
 ```text
-Paste token address -> choose chain -> scan -> plain-language risk report
+Paste token address -> choose chain -> scan -> risk report + next action
 ```
 
-After a scan, RiskLens also creates a shareable report URL:
-
-```text
-/report/{reportId}
-```
+Every scan generates a shareable report URL (`/report/{id}`).
 
 ## Features
 
-- Token risk score: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`
-- Solana mint authority and freeze authority checks
-- Solana largest holder concentration checks
-- EVM token security checks through GoPlus
-- DEX liquidity, volume, pair age, and pair detection through DexScreener
-- Local risk scoring engine
-- Plain-language warnings and recommendations
-- Score breakdown and data confidence label
-- Free plan scan limit: 50 scans per day
-- No wallet connection required
-- Shareable report pages
-- Supabase report storage with local JSON fallback
+**Scanner**
+- Risk scoring: LOW, MEDIUM, HIGH, CRITICAL
+- Solana mint/freeze authority, holder concentration checks
+- EVM security: honeypot, taxes, ownership, proxy, blacklist (via GoPlus)
+- DEX liquidity, volume, pair age detection (via DexScreener)
+- Score breakdown, confidence label, data source transparency
+- Actionable next steps: Avoid, Monitor, Check LP, Verify authority, etc.
+
+**Auth & Accounts**
+- Email/password authentication (Supabase Auth)
+- Account-based scan history
+- Account-based scan limits (logged-in users tracked by user_id)
+- Forgot password / reset password flow
+- Protected routes via proxy middleware
+
+**Watchlist**
+- Save tokens to personal watchlist
+- Add/remove from report or dashboard
+- Foundation for future alert system
+
+**Pro Waitlist**
+- Waitlist capture modal from pricing CTAs
+- Stored in Supabase for demand validation
+
+**Dashboard**
+- Personal scan history
+- Watchlist management
+- Account info and actions
+
+**UX**
+- Responsive mobile nav (hamburger menu)
+- Toast notification system
+- Loading skeletons
+- Custom 404 page
+- SEO: sitemap.xml, robots.txt, OpenGraph meta
+- Custom SVG favicon
 
 ## Supported Chains
 
 - Solana
+- Ethereum
 - Base
 - BNB Chain
-- Ethereum
 
 ## Setup
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -61,110 +78,116 @@ npm run build      # Build production app
 npm run start      # Start production server
 npm run lint       # Run ESLint
 npm run typecheck  # Run TypeScript checks
+npm test           # Run Vitest unit tests (65 tests)
 ```
 
-## Environment
-
-Copy `.env.example` to `.env.local` if you want to use a custom Solana RPC or Supabase storage.
+## Environment Variables
 
 ```bash
+# Data sources
 SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY=your-helius-api-key
 MORALIS_API_KEY=your-moralis-api-key
 ALCHEMY_API_KEY=your-alchemy-api-key
+
+# Supabase (server-side)
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Supabase (client-side, for auth)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-You can also use `SUPABASE_SERVICE_ROLE_KEY` server-side instead of `SUPABASE_PUBLISHABLE_KEY`. Do not expose a service role key with a `NEXT_PUBLIC_` prefix.
+`SUPABASE_SERVICE_ROLE_KEY` is used for server-side writes (reports, scan usage, waitlist, watchlist). Never expose it with a `NEXT_PUBLIC_` prefix.
 
 ## Data Sources
 
-- DexScreener: token pair, liquidity, price, volume, pair age
-- Solana RPC: mint account, token supply, largest accounts
-- Helius: Solana recent transaction activity signals
-- Moralis: EVM token holders and recent transfer activity signals
-- Alchemy: EVM recent transfer activity fallback/enrichment
-- GoPlus Security: EVM token owner, proxy, mint, tax, honeypot signals
+- **DexScreener:** token pair, liquidity, price, volume, pair age
+- **Solana RPC:** mint account, token supply, largest accounts
+- **Helius:** Solana recent transaction activity signals
+- **Moralis:** EVM token holders and recent transfer activity signals
+- **Alchemy:** EVM recent transfer activity fallback
+- **GoPlus Security:** EVM owner, proxy, mint, tax, honeypot signals
 
 ## Architecture
 
 ```text
 app/
-  api/scan/route.ts      # Scan API
-  report/[id]/page.tsx   # Shareable report page
-  page.tsx               # Scanner UI
+  page.tsx                    # Landing page
+  scan/page.tsx               # Scanner UI
+  dashboard/page.tsx          # User dashboard
+  login/page.tsx              # Login
+  register/page.tsx           # Register
+  forgot-password/page.tsx    # Forgot password
+  reset-password/page.tsx     # Reset password
+  report/[id]/page.tsx        # Shareable report page
+  api/scan/route.ts           # Scan API
+  api/reports/route.ts        # Reports listing API
+  api/waitlist/route.ts       # Pro waitlist API
+  api/watchlist/route.ts      # Watchlist CRUD API
+  auth/callback/route.ts      # Supabase auth callback
+  components/
+    Navbar.tsx                # Auth-aware nav with hamburger
+    AuthProvider.tsx          # Auth context
+    Toast.tsx                 # Toast notification system
+    Report.tsx                # Scan report with next actions
+    PricingSection.tsx        # Pricing with waitlist modal
+    WaitlistModal.tsx         # Waitlist signup form
 lib/
-  data-sources.ts        # DexScreener, Solana RPC, GoPlus integrations
-  risk-engine.ts         # Local scoring and warnings
-  report-store.ts        # Supabase report storage with local fallback
-  scan-limit.ts          # Free scan limit enforcement
-  types.ts               # Shared types
+  supabase-server.ts          # Shared server-side Supabase client
+  supabase-browser.ts         # Client-side Supabase singleton
+  data-sources.ts             # Data fetching integrations
+  risk-engine.ts              # Scoring and warnings
+  report-store.ts             # Report storage (Supabase + local fallback)
+  scan-limit.ts               # Scan limit enforcement
+  rate-limit.ts               # Burst rate limiter
+  types.ts                    # Shared types
+proxy.ts                      # Auth middleware (protected routes)
 supabase/
-  schema.sql             # Database schema
+  schema.sql                  # Initial schema
+  migrations/
+    002_waitlist_watchlist.sql # Waitlist, watchlist, RLS hardening
 ```
-
-Reports and free scan usage are stored in Supabase when `SUPABASE_URL` and a Supabase key are configured. If not configured, RiskLens falls back to local storage. Local storage is ignored by Git.
 
 ## Supabase Setup
 
-1. Create a Supabase project.
-2. Open the SQL editor.
-3. Run `supabase/schema.sql`.
-4. Add these variables to `.env.local`:
+1. Create a Supabase project
+2. Run `supabase/schema.sql` in the SQL editor
+3. Run `supabase/migrations/002_waitlist_watchlist.sql`
+4. Enable email auth in Authentication > Providers
+5. Set environment variables in `.env.local` and Vercel
+6. Restart dev server
+
+**RLS policies:**
+- `scan_reports`: public read, service-role-only write
+- `scan_usage`: service-role-only
+- `waitlist_signups`: service-role-only
+- `watchlist`: user can only access their own rows
+
+## Business Model
+
+- **Free:** 50 scans per day, shareable reports, scan history
+- **Pro ($19/mo):** unlimited scans, token watchlist, alerts, advanced signals
+- **Community/API (Custom):** Telegram bot, batch scans, API access, webhooks
+
+## Roadmap
+
+- v1: Web scanner + auth + waitlist ✅ (current)
+- v2: Watchlist alerts (liquidity, authority, risk score changes)
+- v3: Telegram bot for communities
+- v4: Trending token risk feed
+- v5: Public risk API for wallets, bots, dashboards
+
+## Testing
+
+65 unit tests covering risk engine, data sources, rate limiting, formatting, signals, and scan limits.
 
 ```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+npm test
 ```
 
-5. Restart `npm run dev`.
+## Important
 
-The initial schema enables public read/insert/update policies for scan reports so the publishable key can store shared reports. For production, tighten this with rate limits, server-side writes, abuse protection, and user-scoped policies.
-
-Storage tables:
-
-```sql
-create table scan_reports (
-  id text primary key,
-  chain text not null,
-  address text not null,
-  token_name text,
-  token_symbol text,
-  risk_level text not null,
-  score integer not null,
-  liquidity_usd numeric,
-  report jsonb not null,
-  created_at timestamptz not null default now()
-);
-
-create table scan_usage (
-  id text primary key,
-  identifier_hash text not null,
-  usage_date date not null,
-  scan_count integer not null default 0,
-  updated_at timestamptz not null default now()
-);
-```
-
-## Business Model Direction
-
-- Free scanner for growth: 50 scans per day
-- Pro plan: unlimited scans, token watchlist, risk change alerts, advanced wallet activity signals
-- Community plan: Telegram group bot, batch scans, moderation-oriented warning thresholds
-- API plan: risk score endpoint, batch scans, webhooks for wallets, bots, dashboards, and launchpads
-- Paid audit-lite reports for indie token teams
-
-## Product Direction
-
-RiskLens should grow into a Web3 security toolkit for token traders and communities:
-
-- v1: web scanner
-- v2: token watchlist and alerts
-- v3: Telegram bot for communities
-- v4: trending token risk feed
-- v5: risk API for wallets, bots, and dashboards
-
-## Important Note
-
-RiskLens is an automated scanner, not a full smart contract audit. Use it as a fast pre-check before deeper due diligence.
+RiskLens is an automated scanner, not a full smart contract audit. Use it as a fast pre-check before deeper research.
