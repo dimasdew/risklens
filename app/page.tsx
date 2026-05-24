@@ -138,7 +138,7 @@ function RecentScans({ reports }: { reports: ReportSummary[] }) {
           <p className="eyebrow">Scan History</p>
           <h2>Recent scans</h2>
         </div>
-        <span className="tag">Local MVP storage</span>
+        <span className="tag">Cloud scan history</span>
       </div>
 
       <div className="recent-list">
