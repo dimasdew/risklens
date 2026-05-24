@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { chainLabels } from "@/lib/chains";
 import { formatAge, formatUsd } from "@/lib/format";
@@ -8,6 +7,7 @@ import { getSecuritySignals } from "@/lib/signals";
 import type { ScanReport } from "@/lib/types";
 import { Metric } from "@/app/components/Metric";
 import { ScoreBreakdown } from "@/app/components/ScoreBreakdown";
+import { ReportNav } from "./report-nav";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -50,14 +50,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
   return (
     <main className="shell compact-shell">
-      <nav className="nav compact-nav">
-        <Link className="brand brand-link" href="/">
-          <span className="logo">RL</span>
-          <span>RiskLens</span>
-        </Link>
-        <span className="tag">Shared report</span>
-      </nav>
-
+      <ReportNav />
       <ReportCard report={report} />
     </main>
   );

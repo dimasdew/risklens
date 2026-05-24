@@ -187,9 +187,11 @@ export default function Home() {
             </div>
             <div className="lp-footer-links">
               <Link href="/scan">Scanner</Link>
-              <a href="#features">Features</a>
               <a href="#how-it-works">How it works</a>
+              <a href="#features">Features</a>
               <a href="#pricing">Pricing</a>
+              <Link href="/login">Log in</Link>
+              <Link href="/register">Sign up</Link>
             </div>
             <p className="lp-footer-note">
               RiskLens is an automated scanner, not a full smart contract audit. Use it as a fast pre-check before deeper due diligence.

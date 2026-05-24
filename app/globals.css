@@ -1102,6 +1102,45 @@ h1 {
   background: rgba(255, 101, 125, 0.08);
 }
 
+/* ── Loading skeleton ── */
+.loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 40px 0;
+}
+
+.skeleton-block {
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-lg {
+  height: 120px;
+}
+
+.skeleton-md {
+  height: 60px;
+  max-width: 70%;
+}
+
+.skeleton-sm {
+  height: 80px;
+}
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* ── Auth pages ── */
 .auth-page {
   display: flex;
