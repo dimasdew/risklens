@@ -19,8 +19,8 @@ export function Navbar({ variant = "app" }: NavbarProps) {
       <div className="nav-links">
         {variant === "landing" && (
           <>
-            <a href="#features" className="nav-link">Features</a>
             <a href="#how-it-works" className="nav-link">How it works</a>
+            <a href="#features" className="nav-link">Features</a>
             <a href="#pricing" className="nav-link">Pricing</a>
           </>
         )}
