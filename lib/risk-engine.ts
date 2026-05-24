@@ -30,6 +30,8 @@ export function buildRiskReport(data: ScanData): ScanReport {
   const liquidity = data.market?.liquidityUsd ?? 0;
   const hasUnknownLiquidity = Boolean(data.market?.pairAddress && !data.market?.liquidityUsd);
   const ageHours = data.market?.pairAgeHours;
+  const largestHolderPct = data.chain === "solana" ? data.solana?.largestHolderPct : data.evm?.largestHolderPct;
+  const top10HolderPct = data.chain === "solana" ? data.solana?.top10HolderPct : data.evm?.top10HolderPct;
 
   if (data.chain === "solana") {
     if (data.solana?.mintAuthorityActive) {
@@ -50,14 +52,6 @@ export function buildRiskReport(data: ScanData): ScanReport {
       });
     }
 
-    if ((data.solana?.top10HolderPct ?? 0) > 70) {
-      addWarning(warnings, {
-        severity: "HIGH",
-        title: "Top holders control most supply",
-        explanation: `Top token accounts hold about ${data.solana?.top10HolderPct?.toFixed(1)}% of supply.`,
-        recommendation: "Check whether these are liquidity, burn, or team wallets before entering."
-      });
-    }
   }
 
   if (data.chain !== "solana") {
@@ -114,6 +108,49 @@ export function buildRiskReport(data: ScanData): ScanReport {
         recommendation: "High taxes can trap traders or drain value. Avoid unless expected."
       });
     }
+
+    if ((data.evm?.creatorBalancePct ?? 0) >= 10 || (data.evm?.ownerBalancePct ?? 0) >= 10) {
+      addWarning(warnings, {
+        severity: "HIGH",
+        title: "Dev or owner wallet holds significant supply",
+        explanation: `Creator/owner balance appears to hold up to ${Math.max(data.evm?.creatorBalancePct ?? 0, data.evm?.ownerBalancePct ?? 0).toFixed(1)}% of supply.`,
+        recommendation: "Check vesting, lockups, and whether this wallet has sold or transferred tokens."
+      });
+    }
+
+    if ((data.evm?.holderCount ?? 0) > 0 && (data.evm?.holderCount ?? 0) < 100) {
+      addWarning(warnings, {
+        severity: "MEDIUM",
+        title: "Low holder count",
+        explanation: `GoPlus reports about ${data.evm?.holderCount} holders. Thin holder bases can be easier to manipulate.`,
+        recommendation: "Wait for broader distribution or verify whether holders are real users."
+      });
+    }
+  }
+
+  if ((top10HolderPct ?? 0) >= 70) {
+    addWarning(warnings, {
+      severity: "HIGH",
+      title: "Top 10 holders control most supply",
+      explanation: `Top holders appear to control about ${top10HolderPct?.toFixed(1)}% of supply.`,
+      recommendation: "Check whether these are liquidity, burn, CEX, or team wallets before entering."
+    });
+  } else if ((top10HolderPct ?? 0) >= 50) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "High top holder concentration",
+      explanation: `Top holders appear to control about ${top10HolderPct?.toFixed(1)}% of supply.`,
+      recommendation: "Review holder distribution and watch for coordinated sell pressure."
+    });
+  }
+
+  if ((largestHolderPct ?? 0) >= 25) {
+    addWarning(warnings, {
+      severity: "HIGH",
+      title: "Single wallet concentration risk",
+      explanation: `The largest holder appears to control about ${largestHolderPct?.toFixed(1)}% of supply.`,
+      recommendation: "Identify this wallet before buying. It may be liquidity, burn, team, or a whale wallet."
+    });
   }
 
   if (liquidity > 0 && liquidity < 10_000) {
@@ -149,6 +186,15 @@ export function buildRiskReport(data: ScanData): ScanReport {
       title: "New pump.fun launch",
       explanation: "This token appears to be trading on pump.fun and has limited market history.",
       recommendation: "Treat this as speculative until the token has deeper liquidity, holder history, and post-migration trading data."
+    });
+  }
+
+  if (typeof ageHours === "number" && ageHours < 2 && ((data.market?.buys1h ?? 0) + (data.market?.sells1h ?? 0)) >= 150) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "High early trading velocity",
+      explanation: `DexScreener reports about ${(data.market?.buys1h ?? 0) + (data.market?.sells1h ?? 0)} trades in the last hour on a very new pair.`,
+      recommendation: "This may indicate launch hype, bot activity, snipers, or coordinated trading. Confirm with transaction-level analysis."
     });
   }
 

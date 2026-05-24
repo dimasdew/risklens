@@ -20,6 +20,10 @@ export type MarketData = {
   priceUsd?: string;
   liquidityUsd?: number;
   volume24h?: number;
+  buys24h?: number;
+  sells24h?: number;
+  buys1h?: number;
+  sells1h?: number;
   pairAgeHours?: number;
 };
 
@@ -42,6 +46,12 @@ export type EvmSecurityData = {
   buyTax?: number;
   sellTax?: number;
   honeypot?: boolean;
+  holderCount?: number;
+  largestHolderPct?: number;
+  top10HolderPct?: number;
+  creatorAddress?: string;
+  creatorBalancePct?: number;
+  ownerBalancePct?: number;
 };
 
 export type ScanData = {

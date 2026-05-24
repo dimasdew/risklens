@@ -58,6 +58,7 @@ async function fetchDexScreener(chain: Chain, address: string): Promise<(MarketD
       priceUsd?: string;
       liquidity?: { usd?: number };
       volume?: { h24?: number };
+      txns?: { h24?: { buys?: number; sells?: number }; h1?: { buys?: number; sells?: number } };
       pairCreatedAt?: number;
       baseToken?: { address?: string; name?: string; symbol?: string };
       quoteToken?: { address?: string; name?: string; symbol?: string };
@@ -78,6 +79,10 @@ async function fetchDexScreener(chain: Chain, address: string): Promise<(MarketD
     priceUsd: pair.priceUsd,
     liquidityUsd: pair.liquidity?.usd,
     volume24h: pair.volume?.h24,
+    buys24h: pair.txns?.h24?.buys,
+    sells24h: pair.txns?.h24?.sells,
+    buys1h: pair.txns?.h1?.buys,
+    sells1h: pair.txns?.h1?.sells,
     pairAgeHours: pair.pairCreatedAt ? (Date.now() - pair.pairCreatedAt) / 3_600_000 : undefined,
     tokenName: token?.name,
     tokenSymbol: token?.symbol
@@ -142,18 +147,50 @@ async function fetchGoPlusSecurity(chain: Exclude<Chain, "solana">, address: str
     canTakeBackOwnership: result.can_take_back_ownership === "1",
     buyTax: parseTax(result.buy_tax),
     sellTax: parseTax(result.sell_tax),
-    honeypot: result.is_honeypot === "1"
+    honeypot: result.is_honeypot === "1",
+    holderCount: parseOptionalNumber(result.holder_count),
+    largestHolderPct: getLargestHolderPct(result.holders),
+    top10HolderPct: getTopHolderPct(result.holders, 10),
+    creatorAddress: typeof result.creator_address === "string" ? result.creator_address : undefined,
+    creatorBalancePct: parsePercent(result.creator_percent),
+    ownerBalancePct: parsePercent(result.owner_percent)
   };
 }
 
 function findGoPlusResult(result: unknown, address: string) {
   if (!result || typeof result !== "object") return undefined;
   const entries = Object.entries(result as Record<string, unknown>);
-  return entries.find(([key]) => key.toLowerCase() === address.toLowerCase())?.[1] as Record<string, string> | undefined;
+  return entries.find(([key]) => key.toLowerCase() === address.toLowerCase())?.[1] as Record<string, unknown> | undefined;
 }
 
 function parseTax(value: unknown) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return undefined;
   return numeric <= 1 ? numeric * 100 : numeric;
+}
+
+function parseOptionalNumber(value: unknown) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : undefined;
+}
+
+function parsePercent(value: unknown) {
+  const numeric = parseOptionalNumber(value);
+  if (typeof numeric !== "number") return undefined;
+  return numeric <= 1 ? numeric * 100 : numeric;
+}
+
+function getTopHolderPct(value: unknown, count: number) {
+  if (!Array.isArray(value)) return undefined;
+
+  const total = value
+    .slice(0, count)
+    .reduce((sum, holder) => sum + (parsePercent((holder as { percent?: unknown }).percent) ?? 0), 0);
+
+  return total > 0 ? total : undefined;
+}
+
+function getLargestHolderPct(value: unknown) {
+  if (!Array.isArray(value)) return undefined;
+  return parsePercent((value[0] as { percent?: unknown } | undefined)?.percent);
 }

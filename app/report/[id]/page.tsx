@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { chainLabels } from "@/lib/chains";
 import { formatAge, formatUsd } from "@/lib/format";
 import { getReport } from "@/lib/report-store";
+import { getSecuritySignals } from "@/lib/signals";
 import type { ScanReport } from "@/lib/types";
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
@@ -51,6 +52,12 @@ function ReportCard({ report }: { report: ScanReport }) {
         <Metric label="Liquidity" value={formatUsd(report.market?.liquidityUsd)} />
         <Metric label="24h Volume" value={formatUsd(report.market?.volume24h)} />
         <Metric label="DEX" value={report.market?.dex ?? "Unknown"} />
+      </div>
+
+      <div className="signal-grid">
+        {getSecuritySignals(report).map((signal) => (
+          <Metric key={signal.label} label={signal.label} value={signal.value} />
+        ))}
       </div>
 
       <p className="lead">{report.summary}</p>

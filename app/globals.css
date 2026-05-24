@@ -368,6 +368,13 @@ h1 {
   margin: 20px 0;
 }
 
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
 .metric {
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -432,7 +439,8 @@ h1 {
   }
 
   .stats,
-  .grid {
+  .grid,
+  .signal-grid {
     grid-template-columns: 1fr;
   }
 

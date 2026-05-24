@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { chainLabels } from "@/lib/chains";
 import { formatAge, formatUsd } from "@/lib/format";
+import { getSecuritySignals } from "@/lib/signals";
 import type { Chain, ReportSummary, ScanReport } from "@/lib/types";
 
 export default function Home() {
@@ -205,6 +206,12 @@ function Report({ report }: { report: ScanReport }) {
         <Metric label="Liquidity" value={formatUsd(report.market?.liquidityUsd)} />
         <Metric label="24h Volume" value={formatUsd(report.market?.volume24h)} />
         <Metric label="DEX" value={report.market?.dex ?? "Unknown"} />
+      </div>
+
+      <div className="signal-grid">
+        {getSecuritySignals(report).map((signal) => (
+          <Metric key={signal.label} label={signal.label} value={signal.value} />
+        ))}
       </div>
 
       <p className="lead">{report.summary}</p>
