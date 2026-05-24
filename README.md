@@ -32,7 +32,7 @@ After a scan, RiskLens also creates a shareable report URL:
 - Local risk scoring engine
 - Plain-language warnings and recommendations
 - Score breakdown and data confidence label
-- Free plan scan limit: 50 scans per device per day
+- Free plan scan limit: 50 scans per day
 - No wallet connection required
 - Shareable report pages
 - Supabase report storage with local JSON fallback
@@ -149,7 +149,7 @@ create table scan_usage (
 
 ## Business Model Direction
 
-- Free scanner for growth: 50 scans per device per day
+- Free scanner for growth: 50 scans per day
 - Pro plan: unlimited scans, token watchlist, risk change alerts, advanced wallet activity signals
 - Community plan: Telegram group bot, batch scans, moderation-oriented warning thresholds
 - API plan: risk score endpoint, batch scans, webhooks for wallets, bots, dashboards, and launchpads

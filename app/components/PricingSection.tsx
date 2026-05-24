@@ -13,7 +13,7 @@ export function PricingSection() {
         <PlanCard
           cta="Current plan"
           description="Fast token checks for casual research."
-          features={["50 scans per device per day", "Shareable risk reports", "Stored scan history", "Solana and EVM coverage"]}
+          features={["50 scans per day", "Shareable risk reports", "Stored scan history", "Solana and EVM coverage"]}
           name="Free"
           price="$0"
         />
