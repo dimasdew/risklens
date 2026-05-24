@@ -8,6 +8,7 @@ import { useAuth } from "../components/AuthProvider";
 import { Navbar } from "../components/Navbar";
 import { RecentScans } from "../components/RecentScans";
 import { Report } from "../components/Report";
+import { WaitlistModal } from "../components/WaitlistModal";
 
 const scanSteps = ["Reading market data", "Checking authorities", "Analyzing holders", "Calculating risk"];
 
@@ -22,6 +23,7 @@ export default function ScanPage() {
   const [loading, setLoading] = useState(false);
   const [scanStep, setScanStep] = useState(0);
   const [scanUsage, setScanUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [showWaitlist, setShowWaitlist] = useState(false);
 
   useEffect(() => {
     void loadRecentReports();
@@ -40,9 +42,17 @@ export default function ScanPage() {
 
   async function loadScanUsage() {
     try {
-      const response = await fetch("/api/scan-usage", {
-        headers: { "x-risklens-device-id": getDeviceId() }
-      });
+      const headers: Record<string, string> = { "x-risklens-device-id": getDeviceId() };
+
+      if (user) {
+        const { getSupabaseBrowserClient } = await import("@/lib/supabase-browser");
+        const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+        if (session.session?.access_token) {
+          headers.authorization = `Bearer ${session.session.access_token}`;
+        }
+      }
+
+      const response = await fetch("/api/scan-usage", { headers });
       if (response.ok) {
         setScanUsage(await response.json());
       }
@@ -161,12 +171,22 @@ export default function ScanPage() {
             {scanUsage ? `${scanUsage.used}/${scanUsage.limit} scans used today. ` : ""}
             Results are automated risk signals and not financial advice.
           </p>
+          {scanUsage && scanUsage.used >= 40 && (
+            <div className="near-limit-cta">
+              Running low on free scans.{" "}
+              <button type="button" className="near-limit-link" onClick={() => setShowWaitlist(true)}>
+                Join the Pro waitlist
+              </button>{" "}
+              for unlimited scans.
+            </div>
+          )}
           {error ? <div className="error">{error}</div> : null}
         </form>
       </section>
 
       {report ? <Report report={report} /> : null}
       <RecentScans reports={recentReports} personal={!!user} />
+      {showWaitlist && <WaitlistModal plan="Pro" onClose={() => setShowWaitlist(false)} />}
     </main>
   );
 }
