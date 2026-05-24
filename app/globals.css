@@ -60,14 +60,14 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px max(16px, calc((100% - 1180px) / 2 + 16px));
+  padding: 12px max(16px, calc((100% - 1140px) / 2));
   background: rgba(10, 10, 12, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
 
 .nav-spacer {
-  height: 64px;
+  height: 56px;
 }
 
 .compact-nav {
