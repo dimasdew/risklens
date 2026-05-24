@@ -34,6 +34,10 @@ export type SolanaSecurityData = {
   decimals?: number;
   largestHolderPct?: number;
   top10HolderPct?: number;
+  recentTxCount?: number;
+  recentActiveWallets?: number;
+  recentTransferWallets?: number;
+  recentSwapCount?: number;
 };
 
 export type EvmSecurityData = {

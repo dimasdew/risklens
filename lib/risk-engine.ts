@@ -198,6 +198,24 @@ export function buildRiskReport(data: ScanData): ScanReport {
     });
   }
 
+  if (data.chain === "solana" && typeof ageHours === "number" && ageHours < 24 && (data.solana?.recentActiveWallets ?? 0) >= 75) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "High recent wallet activity",
+      explanation: `Helius found about ${data.solana?.recentActiveWallets} active wallets in recent token-related transactions.`,
+      recommendation: "Review recent buyers for bot, sniper, or bundled wallet behavior before entering."
+    });
+  }
+
+  if (data.chain === "solana" && (data.solana?.recentTxCount ?? 0) >= 100 && (data.solana?.recentTransferWallets ?? 0) < 20) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "Concentrated recent transaction activity",
+      explanation: `Recent Helius data shows ${data.solana?.recentTxCount} transactions but only about ${data.solana?.recentTransferWallets} token transfer wallets.`,
+      recommendation: "This can indicate repeated activity among a small wallet set. Check transaction clusters manually."
+    });
+  }
+
   if (!data.market?.pairAddress) {
     addWarning(warnings, {
       severity: "MEDIUM",

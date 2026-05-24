@@ -15,7 +15,7 @@ const dexChainNames: Record<Chain, string> = {
 
 export async function fetchScanData(chain: Chain, address: string): Promise<ScanData> {
   const sources = new Set<string>();
-  const [market, chainSecurity] = await Promise.all([
+  const [market, chainSecurity, solanaActivity] = await Promise.all([
     fetchDexScreener(chain, address).catch(() => undefined).then((data) => {
       if (data) sources.add("DexScreener");
       return data;
@@ -28,8 +28,16 @@ export async function fetchScanData(chain: Chain, address: string): Promise<Scan
       : fetchGoPlusSecurity(chain, address).catch(() => undefined).then((data) => {
           if (data) sources.add("GoPlus Security");
           return data;
+        }),
+    chain === "solana"
+      ? fetchHeliusActivity(address).catch(() => undefined).then((data) => {
+          if (data) sources.add("Helius");
+          return data;
         })
+      : Promise.resolve(undefined)
   ]);
+
+  const solanaSecurity = chain === "solana" ? { ...(chainSecurity as SolanaSecurityData | undefined), ...solanaActivity } : undefined;
 
   return {
     chain,
@@ -37,7 +45,7 @@ export async function fetchScanData(chain: Chain, address: string): Promise<Scan
     tokenName: market?.tokenName,
     tokenSymbol: market?.tokenSymbol,
     market,
-    solana: chain === "solana" ? (chainSecurity as SolanaSecurityData | undefined) : undefined,
+    solana: solanaSecurity,
     evm: chain !== "solana" ? (chainSecurity as EvmSecurityData | undefined) : undefined,
     dataSources: Array.from(sources)
   };
@@ -90,7 +98,7 @@ async function fetchDexScreener(chain: Chain, address: string): Promise<(MarketD
 }
 
 async function fetchSolanaSecurity(address: string): Promise<SolanaSecurityData | undefined> {
-  const rpcUrl = process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
+  const rpcUrl = process.env.SOLANA_RPC_URL ?? getHeliusRpcUrl() ?? "https://api.mainnet-beta.solana.com";
   const [accountInfo, supplyInfo, largestAccounts] = await Promise.all([
     solanaRpc(rpcUrl, "getParsedAccountInfo", [address]),
     solanaRpc(rpcUrl, "getTokenSupply", [address]),
@@ -111,6 +119,45 @@ async function fetchSolanaSecurity(address: string): Promise<SolanaSecurityData 
     decimals: supplyInfo?.result?.value?.decimals,
     largestHolderPct: supplyValue ? (largestAmount / supplyValue) * 100 : undefined,
     top10HolderPct: supplyValue ? (top10Amount / supplyValue) * 100 : undefined
+  };
+}
+
+async function fetchHeliusActivity(address: string): Promise<SolanaSecurityData | undefined> {
+  const apiKey = process.env.HELIUS_API_KEY;
+  if (!apiKey) return undefined;
+
+  const response = await fetch(`https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`, {
+    next: { revalidate: 20 }
+  });
+
+  if (!response.ok) return undefined;
+
+  const transactions = (await response.json()) as Array<{
+    type?: string;
+    feePayer?: string;
+    tokenTransfers?: Array<{ mint?: string; fromUserAccount?: string; toUserAccount?: string }>;
+  }>;
+
+  const activeWallets = new Set<string>();
+  const transferWallets = new Set<string>();
+  let swapCount = 0;
+
+  for (const tx of transactions) {
+    if (tx.feePayer) activeWallets.add(tx.feePayer);
+    if (tx.type === "SWAP") swapCount += 1;
+
+    for (const transfer of tx.tokenTransfers ?? []) {
+      if (transfer.mint !== address) continue;
+      if (transfer.fromUserAccount) transferWallets.add(transfer.fromUserAccount);
+      if (transfer.toUserAccount) transferWallets.add(transfer.toUserAccount);
+    }
+  }
+
+  return {
+    recentTxCount: transactions.length,
+    recentActiveWallets: activeWallets.size,
+    recentTransferWallets: transferWallets.size,
+    recentSwapCount: swapCount
   };
 }
 
@@ -167,6 +214,10 @@ function parseTax(value: unknown) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return undefined;
   return numeric <= 1 ? numeric * 100 : numeric;
+}
+
+function getHeliusRpcUrl() {
+  return process.env.HELIUS_API_KEY ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}` : undefined;
 }
 
 function parseOptionalNumber(value: unknown) {

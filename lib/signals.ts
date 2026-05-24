@@ -13,6 +13,8 @@ export function getSecuritySignals(report: ScanReport) {
     { label: "Dev/owner holding", value: devHoldingPct > 0 ? formatPct(devHoldingPct) : "Unknown" },
     { label: "Holder count", value: report.evm?.holderCount ? report.evm.holderCount.toLocaleString() : "Unknown" },
     { label: "1h buys/sells", value: buys1h || sells1h ? `${buys1h}/${sells1h}` : "Unknown" },
+    { label: "Recent wallets", value: report.solana?.recentActiveWallets ? report.solana.recentActiveWallets.toLocaleString() : "Unknown" },
+    { label: "Recent txs", value: report.solana?.recentTxCount ? report.solana.recentTxCount.toLocaleString() : "Unknown" },
     { label: "Authority risk", value: getAuthorityRisk(report) }
   ];
 }
