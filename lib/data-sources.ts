@@ -19,9 +19,15 @@ const moralisChainNames: Record<Exclude<Chain, "solana">, string> = {
   base: "base"
 };
 
+const alchemyNetworkNames: Record<Exclude<Chain, "solana">, string> = {
+  ethereum: "eth-mainnet",
+  bsc: "bnb-mainnet",
+  base: "base-mainnet"
+};
+
 export async function fetchScanData(chain: Chain, address: string): Promise<ScanData> {
   const sources = new Set<string>();
-  const [market, chainSecurity, solanaActivity, evmActivity] = await Promise.all([
+  const [market, chainSecurity, solanaActivity, moralisActivity, alchemyActivity] = await Promise.all([
     fetchDexScreener(chain, address).catch(() => undefined).then((data) => {
       if (data) sources.add("DexScreener");
       return data;
@@ -46,11 +52,17 @@ export async function fetchScanData(chain: Chain, address: string): Promise<Scan
           if (data) sources.add("Moralis");
           return data;
         })
+      : Promise.resolve(undefined),
+    chain !== "solana"
+      ? fetchAlchemyActivity(chain, address).catch(() => undefined).then((data) => {
+          if (data) sources.add("Alchemy");
+          return data;
+        })
       : Promise.resolve(undefined)
   ]);
 
   const solanaSecurity = chain === "solana" ? { ...(chainSecurity as SolanaSecurityData | undefined), ...solanaActivity } : undefined;
-  const evmSecurity = chain !== "solana" ? { ...(chainSecurity as EvmSecurityData | undefined), ...evmActivity } : undefined;
+  const evmSecurity = chain !== "solana" ? mergeEvmData(chainSecurity as EvmSecurityData | undefined, alchemyActivity, moralisActivity) : undefined;
 
   return {
     chain,
@@ -258,6 +270,66 @@ async function moralisGet(url: string, apiKey: string) {
 
   if (!response.ok) return undefined;
   return response.json();
+}
+
+async function fetchAlchemyActivity(chain: Exclude<Chain, "solana">, address: string): Promise<EvmSecurityData | undefined> {
+  const apiKey = process.env.ALCHEMY_API_KEY;
+  if (!apiKey) return undefined;
+
+  const network = alchemyNetworkNames[chain];
+  const response = await fetch(`https://${network}.g.alchemy.com/v2/${apiKey}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "alchemy_getAssetTransfers",
+      params: [
+        {
+          category: ["erc20"],
+          contractAddresses: [address],
+          maxCount: "0x64",
+          order: "desc",
+          withMetadata: false
+        }
+      ]
+    }),
+    next: { revalidate: 20 }
+  });
+
+  if (!response.ok) return undefined;
+
+  const payload = (await response.json()) as { result?: { transfers?: Array<{ from?: string; to?: string; hash?: string }> } };
+  const transfers = payload.result?.transfers ?? [];
+  const activeWallets = new Set<string>();
+  const hashes = new Set<string>();
+
+  for (const transfer of transfers) {
+    if (transfer.from) activeWallets.add(transfer.from);
+    if (transfer.to) activeWallets.add(transfer.to);
+    if (transfer.hash) hashes.add(transfer.hash);
+  }
+
+  return {
+    recentTxCount: hashes.size || transfers.length,
+    recentActiveWallets: activeWallets.size,
+    recentTransferWallets: activeWallets.size
+  };
+}
+
+function mergeEvmData(...sources: Array<EvmSecurityData | undefined>): EvmSecurityData | undefined {
+  const merged: EvmSecurityData = {};
+
+  for (const source of sources) {
+    if (!source) continue;
+    for (const [key, value] of Object.entries(source) as Array<[keyof EvmSecurityData, EvmSecurityData[keyof EvmSecurityData]]>) {
+      if (value !== undefined && merged[key] === undefined) {
+        Object.assign(merged, { [key]: value });
+      }
+    }
+  }
+
+  return Object.keys(merged).length ? merged : undefined;
 }
 
 function findGoPlusResult(result: unknown, address: string) {
