@@ -60,13 +60,13 @@ export default function Home() {
           <span className="logo">RL</span>
           <span>RiskLens</span>
         </div>
-        <span className="tag">Solana + EVM token risk scanner</span>
+        <span className="tag">Solana and EVM token risk scanner</span>
       </nav>
 
       <section className="hero">
         <div>
           <p className="eyebrow">Scan before you trust</p>
-          <h1>See token risk before you ape.</h1>
+          <h1>Assess token risk before you trade.</h1>
           <p className="lead">
             Paste a token address and RiskLens checks liquidity, token authorities, owner powers,
             honeypot signals, taxes, and holder concentration. Built for new Solana and EVM tokens.
@@ -75,7 +75,7 @@ export default function Home() {
           <div className="stats">
             <div className="stat-card">
               <strong>3</strong>
-              <span>MVP chains: Solana, Base, BNB</span>
+              <span>Supported chains: Solana, Base, BNB</span>
             </div>
             <div className="stat-card">
               <strong>60s</strong>
@@ -114,8 +114,7 @@ export default function Home() {
             {loading ? "Scanning..." : "Scan Token"}
           </button>
           <p className="hint">
-            MVP uses DexScreener, Solana RPC, and GoPlus where available. Results are automated warnings,
-            not a full audit.
+            RiskLens uses market, holder, transaction, and security data to generate automated risk signals.
           </p>
           {error ? <div className="error">{error}</div> : null}
         </form>
@@ -139,7 +138,7 @@ function RecentScans({ reports }: { reports: ReportSummary[] }) {
           <p className="eyebrow">Scan History</p>
           <h2>Recent scans</h2>
         </div>
-        <span className="tag">Cloud scan history</span>
+        <span className="tag">Stored scan history</span>
       </div>
 
       <div className="recent-list">

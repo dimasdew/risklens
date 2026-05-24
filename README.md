@@ -5,12 +5,12 @@ RiskLens is a new token risk scanner for Solana and EVM. It helps traders, commu
 Tagline:
 
 ```text
-See the risk before you ape.
+Assess token risk before you trade.
 ```
 
 RiskLens turns technical token signals into a plain-language report: risk score, warnings, impact, and recommended action.
 
-## MVP Flow
+## Product Flow
 
 ```text
 Paste token address -> choose chain -> scan -> plain-language risk report
@@ -117,9 +117,9 @@ SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 
 5. Restart `npm run dev`.
 
-The MVP schema enables public read/insert/update policies for scan reports so the publishable key can store shared reports. For production, tighten this with rate limits, server-side writes, abuse protection, and user-scoped policies.
+The initial schema enables public read/insert/update policies for scan reports so the publishable key can store shared reports. For production, tighten this with rate limits, server-side writes, abuse protection, and user-scoped policies.
 
-MVP storage table:
+Storage table:
 
 ```sql
 create table scan_reports (
