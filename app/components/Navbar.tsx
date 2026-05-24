@@ -13,6 +13,7 @@ export function Navbar({ variant = "app" }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
+    <>
     <nav className="nav">
       <Link className="brand brand-link" href="/">
         <span className="logo">RL</span>
@@ -63,5 +64,7 @@ export function Navbar({ variant = "app" }: NavbarProps) {
         )}
       </div>
     </nav>
+    <div className="nav-spacer" />
+    </>
   );
 }
