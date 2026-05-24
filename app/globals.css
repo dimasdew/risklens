@@ -491,7 +491,7 @@ a {
   place-items: center;
   border-radius: 14px;
   background: rgba(72, 245, 164, 0.1);
-  font-size: 20px;
+  color: var(--green);
 }
 
 .feature-card strong {

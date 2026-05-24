@@ -206,21 +206,68 @@ export default function Home() {
 function FeatureCard({ icon, title, description }: { icon: string; title: string; description: string }) {
   return (
     <div className="feature-card">
-      <span className={`feature-icon feature-icon-${icon}`}>{iconGlyph(icon)}</span>
+      <span className="feature-icon">
+        <FeatureIcon name={icon} />
+      </span>
       <strong>{title}</strong>
       <p>{description}</p>
     </div>
   );
 }
 
-function iconGlyph(icon: string) {
-  const map: Record<string, string> = {
-    shield: "\u{1F6E1}",
-    droplet: "\u{1F4A7}",
-    eye: "\u{1F441}",
-    users: "\u{1F465}",
-    activity: "\u{26A1}",
-    share: "\u{1F517}"
-  };
-  return map[icon] ?? "\u{2728}";
+function FeatureIcon({ name }: { name: string }) {
+  const props = { width: 22, height: 22, fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+
+  switch (name) {
+    case "shield":
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      );
+    case "droplet":
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+        </svg>
+      );
+    case "eye":
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
+    case "users":
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case "activity":
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      );
+    case "share":
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      );
+  }
 }
