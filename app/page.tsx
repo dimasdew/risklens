@@ -20,8 +20,8 @@ export default function Home() {
               <p className="eyebrow">Web3 Token Security</p>
               <h1>Don&#39;t trade blind.<br />Scan first.</h1>
               <p className="lead">
-                RiskLens turns raw on-chain signals into a plain-language risk report: score, warnings,
-                impact, and recommended action — in seconds, for free.
+                RiskLens turns raw on-chain signals into a plain-language risk report. Score, warnings,
+                impact, and what to do next. In seconds, completely free.
               </p>
               <div className="lp-hero-actions">
                 <Link href="/scan" className="btn-primary">Scan a Token</Link>
@@ -88,7 +88,7 @@ export default function Home() {
             <div className="step-card">
               <span className="step-number">3</span>
               <strong>Get your report</strong>
-              <p>A plain-language risk report with score, warnings, and recommendations — shareable with one link.</p>
+              <p>A plain-language risk report with score, warnings, and recommendations. Shareable with one link.</p>
             </div>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function Home() {
             <FeatureCard
               icon="shield"
               title="Authority & Owner Powers"
-              description="Detects active mint authority, freeze authority, blacklist controls, proxy contracts, and take-back-ownership risks."
+              description="Detects active mint authority, freeze authority, blacklist controls, proxy contracts, and ownership takeback risks."
             />
             <FeatureCard
               icon="droplet"
@@ -125,7 +125,7 @@ export default function Home() {
             <FeatureCard
               icon="activity"
               title="On-chain Activity Signals"
-              description="Monitors recent transaction velocity, active wallet count, sniper patterns, and bot behavior indicators."
+              description="Monitors recent transaction velocity, active wallet count, sniper patterns, and bot behavior."
             />
             <FeatureCard
               icon="share"
@@ -194,7 +194,7 @@ export default function Home() {
               <Link href="/register">Sign up</Link>
             </div>
             <p className="lp-footer-note">
-              RiskLens is an automated scanner, not a full smart contract audit. Use it as a fast pre-check before deeper due diligence.
+              RiskLens is an automated scanner, not a full smart contract audit. Use it as a fast pre-check before deeper research.
             </p>
           </div>
         </div>

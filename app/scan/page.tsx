@@ -77,7 +77,7 @@ export default function ScanPage() {
           <p className="eyebrow">Token Scanner</p>
           <h1 className="scan-page-title">Scan any token in seconds.</h1>
           <p className="lead">
-            Paste a contract address, choose a chain, and get a full risk report with plain-language warnings.
+            Paste a contract address, choose a chain, and get a full risk report with clear warnings.
           </p>
         </div>
 
