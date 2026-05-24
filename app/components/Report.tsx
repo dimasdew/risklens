@@ -1,85 +1,51 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useState } from "react";
 import { chainLabels } from "@/lib/chains";
 import { formatAge, formatUsd } from "@/lib/format";
-import { getReport } from "@/lib/report-store";
 import { getSecuritySignals } from "@/lib/signals";
 import type { ScanReport } from "@/lib/types";
-import { Metric } from "@/app/components/Metric";
-import { ScoreBreakdown } from "@/app/components/ScoreBreakdown";
+import { Metric } from "./Metric";
+import { ScoreBreakdown } from "./ScoreBreakdown";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params;
-  const report = await getReport(id);
-
-  if (!report) {
-    return { title: "Report not found — RiskLens" };
-  }
-
-  const tokenLabel = report.tokenName
-    ? `${report.tokenName}${report.tokenSymbol ? ` (${report.tokenSymbol})` : ""}`
-    : "Unknown Token";
-  const title = `${tokenLabel} — ${report.riskLevel} Risk — RiskLens`;
-  const description = `${chainLabels[report.chain]} token risk report: score ${report.score}/100, ${report.riskLevel} risk. ${report.summary}`;
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      siteName: "RiskLens"
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description
-    }
-  };
-}
-
-export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const report = await getReport(id);
-
-  if (!report) {
-    notFound();
-  }
-
-  return (
-    <main className="shell compact-shell">
-      <nav className="nav compact-nav">
-        <Link className="brand brand-link" href="/">
-          <span className="logo">RL</span>
-          <span>RiskLens</span>
-        </Link>
-        <span className="tag">Shared report</span>
-      </nav>
-
-      <ReportCard report={report} />
-    </main>
-  );
-}
-
-function ReportCard({ report }: { report: ScanReport }) {
+export function Report({ report }: { report: ScanReport }) {
+  const [copied, setCopied] = useState(false);
   const riskClass = `risk-badge risk-${report.riskLevel.toLowerCase()}`;
+  const sharePath = report.reportId ? `/report/${report.reportId}` : undefined;
+  const shareUrl = typeof window !== "undefined" && sharePath ? `${window.location.origin}${sharePath}` : sharePath;
+
+  async function copyShareLink() {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }
 
   return (
-    <section className="result-card standalone-report">
+    <section className="result-card">
       <div className="result-head">
         <div>
-          <p className="eyebrow">RiskLens Report</p>
-          <h1 className="report-title">
+          <h2 className="token-title">
             {report.tokenName ?? "Unknown Token"} {report.tokenSymbol ? `(${report.tokenSymbol})` : ""}
-          </h1>
+          </h2>
           <p className="token-subtitle">
             {chainLabels[report.chain]} · {report.address}
           </p>
         </div>
         <div className={riskClass}>{report.riskLevel}</div>
       </div>
+
+      {shareUrl ? (
+        <div className={`share-box${copied ? " share-box-copied" : ""}`}>
+          <div>
+            <strong>Shareable report</strong>
+            <span>{shareUrl}</span>
+          </div>
+          <button className={copied ? "copied" : ""} type="button" onClick={copyShareLink}>
+            {copied ? "Copied" : "Copy Link"}
+          </button>
+        </div>
+      ) : null}
 
       <div className="grid">
         <Metric label="Score" value={`${report.score}/100`} />
