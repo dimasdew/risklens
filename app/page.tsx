@@ -1,16 +1,29 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { chainLabels } from "@/lib/chains";
 import { formatAge, formatUsd } from "@/lib/format";
-import type { Chain, ScanReport } from "@/lib/types";
+import type { Chain, ReportSummary, ScanReport } from "@/lib/types";
 
 export default function Home() {
   const [chain, setChain] = useState<Chain>("solana");
   const [address, setAddress] = useState("");
   const [report, setReport] = useState<ScanReport | null>(null);
+  const [recentReports, setRecentReports] = useState<ReportSummary[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    void loadRecentReports();
+  }, []);
+
+  async function loadRecentReports() {
+    const response = await fetch("/api/reports");
+    if (!response.ok) return;
+
+    const payload = (await response.json()) as { reports?: ReportSummary[] };
+    setRecentReports(payload.reports ?? []);
+  }
 
   async function scanToken(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,6 +44,7 @@ export default function Home() {
       }
 
       setReport(payload);
+      await loadRecentReports();
     } catch (scanError) {
       setError(scanError instanceof Error ? scanError.message : "Scan failed.");
     } finally {
@@ -107,7 +121,46 @@ export default function Home() {
       </section>
 
       {report ? <Report report={report} /> : null}
+      <RecentScans reports={recentReports} />
     </main>
+  );
+}
+
+function RecentScans({ reports }: { reports: ReportSummary[] }) {
+  if (reports.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="recent-section">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">Scan History</p>
+          <h2>Recent scans</h2>
+        </div>
+        <span className="tag">Local MVP storage</span>
+      </div>
+
+      <div className="recent-list">
+        {reports.map((item) => (
+          <a className="recent-item" href={`/report/${item.reportId}`} key={item.reportId}>
+            <div>
+              <strong>
+                {item.tokenName ?? "Unknown Token"} {item.tokenSymbol ? `(${item.tokenSymbol})` : ""}
+              </strong>
+              <span>
+                {chainLabels[item.chain]} · {shortAddress(item.address)} · {new Date(item.generatedAt).toLocaleString()}
+              </span>
+            </div>
+            <div className="recent-meta">
+              <span className={`mini-risk mini-risk-${item.riskLevel.toLowerCase()}`}>{item.riskLevel}</span>
+              <span>{item.score}/100</span>
+              <span>{formatUsd(item.liquidityUsd)}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -183,4 +236,9 @@ function Metric({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function shortAddress(address: string) {
+  if (address.length <= 14) return address;
+  return `${address.slice(0, 6)}...${address.slice(-6)}`;
 }

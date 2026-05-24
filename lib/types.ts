@@ -63,3 +63,15 @@ export type ScanReport = ScanData & {
   summary: string;
   generatedAt: string;
 };
+
+export type ReportSummary = {
+  reportId: string;
+  chain: Chain;
+  address: string;
+  tokenName?: string;
+  tokenSymbol?: string;
+  riskLevel: RiskLevel;
+  score: number;
+  liquidityUsd?: number;
+  generatedAt: string;
+};

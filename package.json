@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
     "@types/node": "^20.12.12",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
