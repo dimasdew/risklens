@@ -1135,6 +1135,16 @@ h1 {
   background: rgba(255, 101, 125, 0.08);
 }
 
+/* ── Score delta ── */
+.delta-up { color: var(--red); font-weight: 700; }
+.delta-down { color: var(--green); font-weight: 700; }
+
+.watchlist-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* ── Report actions ── */
 .report-actions {
   border: 1px solid var(--line);

@@ -2,7 +2,7 @@ import { chainLabels } from "@/lib/chains";
 import { formatUsd } from "@/lib/format";
 import type { ReportSummary } from "@/lib/types";
 
-export function RecentScans({ reports }: { reports: ReportSummary[] }) {
+export function RecentScans({ reports, personal = false }: { reports: ReportSummary[]; personal?: boolean }) {
   if (reports.length === 0) {
     return null;
   }
@@ -11,10 +11,10 @@ export function RecentScans({ reports }: { reports: ReportSummary[] }) {
     <section className="recent-section">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Scan History</p>
-          <h2>Recent scans</h2>
+          <p className="eyebrow">{personal ? "Your Scan History" : "Recent Scans"}</p>
+          <h2>{personal ? "Your recent scans" : "Recent public scans"}</h2>
         </div>
-        <span className="tag">Stored scan history</span>
+        <span className="tag">{personal ? "Personal history" : "Public feed"}</span>
       </div>
 
       <div className="recent-list">

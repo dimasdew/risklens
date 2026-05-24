@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import { Navbar } from "../components/Navbar";
 import { useToast } from "../components/Toast";
@@ -17,14 +18,25 @@ type WatchlistItem = {
   token_name: string | null;
   token_symbol: string | null;
   created_at: string;
+  last_score: number | null;
+  last_risk_level: string | null;
+  last_scanned_at: string | null;
+  score_delta: number | null;
 };
 
 export default function DashboardPage() {
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/login?redirect=/dashboard");
+    }
+  }, [authLoading, user, router]);
 
   useEffect(() => {
     async function loadReports() {
@@ -80,6 +92,18 @@ export default function DashboardPage() {
     toast("Signed out.", "info");
   }
 
+  if (authLoading || !user) {
+    return (
+      <main className="shell compact-shell">
+        <Navbar />
+        <div className="loading-skeleton">
+          <div className="skeleton-block skeleton-lg"></div>
+          <div className="skeleton-block skeleton-md"></div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="shell compact-shell">
       <Navbar />
@@ -122,18 +146,37 @@ export default function DashboardPage() {
                 <div>
                   <strong>
                     {item.token_name ?? "Unknown Token"} {item.token_symbol ? `(${item.token_symbol})` : ""}
+                    {item.last_score !== null && (
+                      <span className={`mini-risk mini-risk-${(item.last_risk_level ?? "medium").toLowerCase()}`}>
+                        {" "}{item.last_score}/100
+                        {item.score_delta !== null && item.score_delta !== 0 && (
+                          <span className={item.score_delta < 0 ? "delta-down" : "delta-up"}>
+                            {" "}{item.score_delta > 0 ? "+" : ""}{item.score_delta}
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </strong>
                   <span>
-                    {chainLabels[item.chain]} · {shortAddress(item.address)} · Added {new Date(item.created_at).toLocaleDateString()}
+                    {chainLabels[item.chain]} · {shortAddress(item.address)}
+                    {item.last_scanned_at ? ` · Last scanned ${new Date(item.last_scanned_at).toLocaleDateString()}` : ` · Added ${new Date(item.created_at).toLocaleDateString()}`}
                   </span>
                 </div>
-                <button
-                  className="action-btn"
-                  type="button"
-                  onClick={() => removeFromWatchlist(item.chain, item.address)}
-                >
-                  Remove
-                </button>
+                <div className="watchlist-actions">
+                  <Link
+                    href={`/scan?chain=${item.chain}&address=${item.address}`}
+                    className="action-btn"
+                  >
+                    Rescan
+                  </Link>
+                  <button
+                    className="action-btn"
+                    type="button"
+                    onClick={() => removeFromWatchlist(item.chain, item.address)}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             ))}
           </div>

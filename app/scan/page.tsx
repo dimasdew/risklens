@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { chainLabels } from "@/lib/chains";
 import type { Chain, ReportSummary, ScanReport } from "@/lib/types";
 import { useAuth } from "../components/AuthProvider";
@@ -12,16 +13,19 @@ const scanSteps = ["Reading market data", "Checking authorities", "Analyzing hol
 
 export default function ScanPage() {
   const { user } = useAuth();
-  const [chain, setChain] = useState<Chain>("solana");
-  const [address, setAddress] = useState("");
+  const searchParams = useSearchParams();
+  const [chain, setChain] = useState<Chain>((searchParams.get("chain") as Chain) || "solana");
+  const [address, setAddress] = useState(searchParams.get("address") || "");
   const [report, setReport] = useState<ScanReport | null>(null);
   const [recentReports, setRecentReports] = useState<ReportSummary[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [scanStep, setScanStep] = useState(0);
+  const [scanUsage, setScanUsage] = useState<{ used: number; limit: number } | null>(null);
 
   useEffect(() => {
     void loadRecentReports();
+    void loadScanUsage();
   }, []);
 
   useEffect(() => {
@@ -34,8 +38,29 @@ export default function ScanPage() {
     return () => window.clearInterval(timer);
   }, [loading]);
 
+  async function loadScanUsage() {
+    try {
+      const response = await fetch("/api/scan-usage", {
+        headers: { "x-risklens-device-id": getDeviceId() }
+      });
+      if (response.ok) {
+        setScanUsage(await response.json());
+      }
+    } catch { /* ignore */ }
+  }
+
   async function loadRecentReports() {
-    const response = await fetch("/api/reports");
+    const headers: Record<string, string> = {};
+
+    if (user) {
+      const { getSupabaseBrowserClient } = await import("@/lib/supabase-browser");
+      const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+      if (session.session?.access_token) {
+        headers.authorization = `Bearer ${session.session.access_token}`;
+      }
+    }
+
+    const response = await fetch("/api/reports", { headers });
     if (!response.ok) return;
 
     const payload = (await response.json()) as { reports?: ReportSummary[] };
@@ -76,6 +101,7 @@ export default function ScanPage() {
 
       setReport(payload);
       await loadRecentReports();
+      await loadScanUsage();
     } catch (scanError) {
       setError(scanError instanceof Error ? scanError.message : "Scan failed.");
     } finally {
@@ -132,14 +158,15 @@ export default function ScanPage() {
             </div>
           ) : null}
           <p className="hint">
-            Free plan includes 50 scans per day. Results are automated risk signals and not financial advice.
+            {scanUsage ? `${scanUsage.used}/${scanUsage.limit} scans used today. ` : ""}
+            Results are automated risk signals and not financial advice.
           </p>
           {error ? <div className="error">{error}</div> : null}
         </form>
       </section>
 
       {report ? <Report report={report} /> : null}
-      <RecentScans reports={recentReports} />
+      <RecentScans reports={recentReports} personal={!!user} />
     </main>
   );
 }

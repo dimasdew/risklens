@@ -21,7 +21,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ items: data ?? [] });
+  // Enrich with latest scan score for each watchlisted token
+  const items = await Promise.all(
+    (data ?? []).map(async (item) => {
+      const { data: scans } = await client
+        .from("scan_reports")
+        .select("score, risk_level, created_at")
+        .eq("chain", item.chain)
+        .eq("address", item.address)
+        .order("created_at", { ascending: false })
+        .limit(2);
+
+      const latest = scans?.[0] ?? null;
+      const previous = scans?.[1] ?? null;
+      const scoreDelta = latest && previous ? latest.score - previous.score : null;
+
+      return {
+        ...item,
+        last_score: latest?.score ?? null,
+        last_risk_level: latest?.risk_level ?? null,
+        last_scanned_at: latest?.created_at ?? null,
+        score_delta: scoreDelta
+      };
+    })
+  );
+
+  return NextResponse.json({ items });
 }
 
 export async function POST(request: Request) {

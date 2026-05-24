@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const protectedRoutes = ["/dashboard"];
 const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has("sb-access-token") || hasSupabaseAuthCookie(request);
 
-  if (protectedRoutes.some((route) => pathname.startsWith(route))) {
-    if (!hasSession) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-
+  // Only redirect logged-in users away from auth pages.
+  // Dashboard auth is handled client-side by AuthProvider for reliability
+  // (Supabase browser auth stores session in localStorage, not cookies).
   if (authRoutes.some((route) => pathname.startsWith(route))) {
     if (hasSession) {
       return NextResponse.redirect(new URL("/scan", request.url));
@@ -33,5 +27,5 @@ function hasSupabaseAuthCookie(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register", "/forgot-password", "/reset-password"]
+  matcher: ["/login", "/register", "/forgot-password", "/reset-password"]
 };

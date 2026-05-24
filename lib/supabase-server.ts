@@ -19,7 +19,7 @@ export function getSupabaseServerClient(): SupabaseClient {
     }
 
     if (process.env.NODE_ENV === "production") {
-      console.warn("[supabase-server] SUPABASE_SERVICE_ROLE_KEY is not set. Using publishable key. Set service role key for production.");
+      throw new Error("[supabase-server] SUPABASE_SERVICE_ROLE_KEY is required in production. Set it in your environment variables.");
     }
 
     _client = createClient(url, fallbackKey, {
