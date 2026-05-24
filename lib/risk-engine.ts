@@ -207,7 +207,12 @@ export function buildRiskReport(data: ScanData): ScanReport {
     });
   }
 
-  if (data.chain === "solana" && (data.solana?.recentTxCount ?? 0) >= 100 && (data.solana?.recentTransferWallets ?? 0) < 20) {
+  if (
+    data.chain === "solana" &&
+    (data.solana?.recentTxCount ?? 0) >= 100 &&
+    typeof data.solana?.recentTransferWallets === "number" &&
+    data.solana.recentTransferWallets < 20
+  ) {
     addWarning(warnings, {
       severity: "MEDIUM",
       title: "Concentrated recent transaction activity",
@@ -225,7 +230,12 @@ export function buildRiskReport(data: ScanData): ScanReport {
     });
   }
 
-  if (data.chain !== "solana" && (data.evm?.recentTxCount ?? 0) >= 100 && (data.evm?.recentTransferWallets ?? 0) < 20) {
+  if (
+    data.chain !== "solana" &&
+    (data.evm?.recentTxCount ?? 0) >= 100 &&
+    typeof data.evm?.recentTransferWallets === "number" &&
+    data.evm.recentTransferWallets < 20
+  ) {
     addWarning(warnings, {
       severity: "MEDIUM",
       title: "Concentrated EVM transfer activity",
