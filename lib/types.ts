@@ -1,9 +1,11 @@
 export type Chain = "solana" | "base" | "bsc" | "ethereum";
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type RiskConfidence = "HIGH" | "MEDIUM" | "LIMITED";
 
 export type Warning = {
   severity: RiskLevel;
+  points?: number;
   title: string;
   explanation: string;
   recommendation: string;
@@ -75,6 +77,7 @@ export type ScanData = {
 export type ScanReport = ScanData & {
   reportId?: string;
   riskLevel: RiskLevel;
+  confidence: RiskConfidence;
   score: number;
   warnings: Warning[];
   summary: string;

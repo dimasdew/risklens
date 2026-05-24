@@ -31,6 +31,8 @@ After a scan, RiskLens also creates a shareable report URL:
 - DEX liquidity, volume, pair age, and pair detection through DexScreener
 - Local risk scoring engine
 - Plain-language warnings and recommendations
+- Score breakdown and data confidence label
+- Free plan scan limit: 50 scans per day
 - No wallet connection required
 - Shareable report pages
 - Supabase report storage with local JSON fallback
@@ -95,13 +97,14 @@ app/
 lib/
   data-sources.ts        # DexScreener, Solana RPC, GoPlus integrations
   risk-engine.ts         # Local scoring and warnings
-  report-store.ts        # Supabase storage with local fallback
+  report-store.ts        # Supabase report storage with local fallback
+  scan-limit.ts          # Free scan limit enforcement
   types.ts               # Shared types
 supabase/
   schema.sql             # Database schema
 ```
 
-Reports are stored in Supabase when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are configured. If not configured, RiskLens falls back to local `.data/reports` JSON storage. This folder is ignored by Git.
+Reports and free scan usage are stored in Supabase when `SUPABASE_URL` and a Supabase key are configured. If not configured, RiskLens falls back to local storage. Local storage is ignored by Git.
 
 ## Supabase Setup
 
@@ -119,7 +122,7 @@ SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 
 The initial schema enables public read/insert/update policies for scan reports so the publishable key can store shared reports. For production, tighten this with rate limits, server-side writes, abuse protection, and user-scoped policies.
 
-Storage table:
+Storage tables:
 
 ```sql
 create table scan_reports (
@@ -134,11 +137,19 @@ create table scan_reports (
   report jsonb not null,
   created_at timestamptz not null default now()
 );
+
+create table scan_usage (
+  id text primary key,
+  identifier_hash text not null,
+  usage_date date not null,
+  scan_count integer not null default 0,
+  updated_at timestamptz not null default now()
+);
 ```
 
 ## Business Model Direction
 
-- Free scanner for growth
+- Free scanner for growth: 50 scans per day
 - Pro watchlist and alerts for active traders
 - Telegram bot subscription for crypto communities
 - API access for wallets, bots, dashboards, and launchpads

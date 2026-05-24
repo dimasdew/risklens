@@ -6,17 +6,30 @@ import { formatAge, formatUsd } from "@/lib/format";
 import { getSecuritySignals } from "@/lib/signals";
 import type { Chain, ReportSummary, ScanReport } from "@/lib/types";
 
+const scanSteps = ["Reading market data", "Checking authorities", "Analyzing holders", "Calculating risk"];
+
 export default function Home() {
   const [chain, setChain] = useState<Chain>("solana");
   const [address, setAddress] = useState("");
   const [report, setReport] = useState<ScanReport | null>(null);
   const [recentReports, setRecentReports] = useState<ReportSummary[]>([]);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+const [loading, setLoading] = useState(false);
+  const [scanStep, setScanStep] = useState(0);
 
   useEffect(() => {
     void loadRecentReports();
   }, []);
+
+  useEffect(() => {
+    if (!loading) return;
+
+    const timer = window.setInterval(() => {
+      setScanStep((step) => Math.min(step + 1, scanSteps.length - 1));
+    }, 900);
+
+    return () => window.clearInterval(timer);
+  }, [loading]);
 
   async function loadRecentReports() {
     const response = await fetch("/api/reports");
@@ -30,6 +43,7 @@ export default function Home() {
     event.preventDefault();
     setError("");
     setReport(null);
+    setScanStep(0);
     setLoading(true);
 
     try {
@@ -74,12 +88,12 @@ export default function Home() {
 
           <div className="stats">
             <div className="stat-card">
-              <strong>3</strong>
-              <span>Supported chains: Solana, Base, BNB</span>
+              <strong>4</strong>
+              <span>Supported chains: Solana, Base, BNB, Ethereum</span>
             </div>
             <div className="stat-card">
-              <strong>60s</strong>
-              <span>Plain-language risk report</span>
+              <strong>50</strong>
+              <span>Free scans per day</span>
             </div>
             <div className="stat-card">
               <strong>0</strong>
@@ -113,8 +127,17 @@ export default function Home() {
           <button className="scan-button" disabled={loading || !address.trim()}>
             {loading ? "Scanning..." : "Scan Token"}
           </button>
+          {loading ? (
+            <div className="scan-progress">
+              {scanSteps.map((step, index) => (
+                <span className={index <= scanStep ? "active" : ""} key={step}>
+                  {step}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <p className="hint">
-            RiskLens uses market, holder, transaction, and security data to generate automated risk signals.
+            Free plan includes 50 scans per day. Results are automated risk signals and not financial advice.
           </p>
           {error ? <div className="error">{error}</div> : null}
         </form>
@@ -205,6 +228,7 @@ function Report({ report }: { report: ScanReport }) {
 
       <div className="grid">
         <Metric label="Score" value={`${report.score}/100`} />
+        <Metric label="Confidence" value={formatConfidence(report.confidence)} />
         <Metric label="Liquidity" value={formatUsd(report.market?.liquidityUsd)} />
         <Metric label="24h Volume" value={formatUsd(report.market?.volume24h)} />
         <Metric label="DEX" value={report.market?.dex ?? "Unknown"} />
@@ -217,6 +241,8 @@ function Report({ report }: { report: ScanReport }) {
       </div>
 
       <p className="lead">{report.summary}</p>
+
+      <ScoreBreakdown report={report} />
 
       <ul className="warning-list">
         {report.warnings.map((warning) => (
@@ -238,6 +264,27 @@ function Report({ report }: { report: ScanReport }) {
   );
 }
 
+function ScoreBreakdown({ report }: { report: ScanReport }) {
+  if (report.warnings.length === 0) return null;
+
+  return (
+    <div className="score-breakdown">
+      <div className="breakdown-head">
+        <strong>Score breakdown</strong>
+        <span>{report.score}/100</span>
+      </div>
+      <div className="breakdown-list">
+        {report.warnings.map((warning) => (
+          <div className="breakdown-item" key={`${warning.severity}-${warning.title}`}>
+            <span>{warning.title}</span>
+            <strong>+{warningPoints(warning)}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="metric">
@@ -245,6 +292,20 @@ function Metric({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function formatConfidence(confidence: ScanReport["confidence"]) {
+  if (confidence === "HIGH") return "High";
+  if (confidence === "MEDIUM") return "Medium";
+  return "Limited data";
+}
+
+function warningPoints(warning: ScanReport["warnings"][number]) {
+  if (typeof warning.points === "number") return warning.points;
+  if (warning.severity === "CRITICAL") return 70;
+  if (warning.severity === "HIGH") return 45;
+  if (warning.severity === "MEDIUM") return 25;
+  return 10;
 }
 
 function shortAddress(address: string) {

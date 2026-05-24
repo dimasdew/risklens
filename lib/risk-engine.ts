@@ -1,4 +1,4 @@
-import type { RiskLevel, ScanData, ScanReport, Warning } from "./types";
+import type { RiskConfidence, RiskLevel, ScanData, ScanReport, Warning } from "./types";
 
 const severityWeight: Record<RiskLevel, number> = {
   LOW: 10,
@@ -8,7 +8,7 @@ const severityWeight: Record<RiskLevel, number> = {
 };
 
 function addWarning(warnings: Warning[], warning: Warning) {
-  warnings.push(warning);
+  warnings.push({ ...warning, points: warning.points ?? severityWeight[warning.severity] });
 }
 
 function levelFromScore(score: number): RiskLevel {
@@ -21,7 +21,7 @@ function levelFromScore(score: number): RiskLevel {
 function scoreWarnings(warnings: Warning[]) {
   return Math.min(
     100,
-    warnings.reduce((total, warning) => total + severityWeight[warning.severity], 0)
+    warnings.reduce((total, warning) => total + (warning.points ?? severityWeight[warning.severity]), 0)
   );
 }
 
@@ -259,6 +259,7 @@ export function buildRiskReport(data: ScanData): ScanReport {
   return {
     ...data,
     riskLevel,
+    confidence: buildConfidence(data),
     score,
     warnings,
     summary: buildSummary(riskLevel, warnings),
@@ -272,7 +273,7 @@ function buildSummary(riskLevel: RiskLevel, warnings: Warning[]) {
   }
 
   if (riskLevel === "CRITICAL") {
-    return "Critical risk. The token has one or more red flags that may cause loss of funds or block selling.";
+    return "Critical launch or contract risk. One or more automated signals indicate a high-risk trading environment.";
   }
 
   if (riskLevel === "HIGH") {
@@ -284,4 +285,15 @@ function buildSummary(riskLevel: RiskLevel, warnings: Warning[]) {
   }
 
   return "Low automated risk. Continue with normal due diligence before buying.";
+}
+
+function buildConfidence(data: ScanData): RiskConfidence {
+  const sourceCount = data.dataSources.length;
+  const hasLiquidity = typeof data.market?.liquidityUsd === "number";
+  const hasHolderData = data.chain === "solana" ? typeof data.solana?.top10HolderPct === "number" : typeof data.evm?.top10HolderPct === "number";
+  const hasActivityData = data.chain === "solana" ? typeof data.solana?.recentTxCount === "number" : typeof data.evm?.recentTxCount === "number";
+
+  if (sourceCount >= 3 && hasLiquidity && hasHolderData && hasActivityData) return "HIGH";
+  if (sourceCount >= 2 && (hasHolderData || hasActivityData)) return "MEDIUM";
+  return "LIMITED";
 }

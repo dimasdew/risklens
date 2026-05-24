@@ -190,6 +190,27 @@ h1 {
   line-height: 1.5;
 }
 
+.scan-progress {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.scan-progress span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 7px 10px;
+  transition: border-color 180ms ease, color 180ms ease, background 180ms ease;
+}
+
+.scan-progress span.active {
+  border-color: rgba(72, 245, 164, 0.55);
+  background: rgba(72, 245, 164, 0.08);
+  color: var(--green);
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -382,9 +403,48 @@ h1 {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin: 20px 0;
+}
+
+.score-breakdown {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  margin: 20px 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.breakdown-head,
+.breakdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.breakdown-head {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 16px;
+}
+
+.breakdown-head span,
+.breakdown-item strong {
+  color: var(--green);
+}
+
+.breakdown-list {
+  display: grid;
+}
+
+.breakdown-item {
+  color: var(--muted);
+  padding: 12px 16px;
+}
+
+.breakdown-item + .breakdown-item {
+  border-top: 1px solid rgba(122, 148, 184, 0.14);
 }
 
 .signal-grid {

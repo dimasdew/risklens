@@ -18,7 +18,7 @@ export function getSecuritySignals(report: ScanReport) {
     { label: "Recent wallets", value: recentActiveWallets ? recentActiveWallets.toLocaleString() : "Unknown" },
     { label: "Recent txs", value: recentTxCount ? recentTxCount.toLocaleString() : "Unknown" },
     { label: "Authority risk", value: getAuthorityRisk(report) }
-  ];
+  ].filter((signal) => signal.value !== "Unknown");
 }
 
 function getAuthorityRisk(report: ScanReport) {

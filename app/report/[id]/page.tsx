@@ -49,6 +49,7 @@ function ReportCard({ report }: { report: ScanReport }) {
 
       <div className="grid">
         <Metric label="Score" value={`${report.score}/100`} />
+        <Metric label="Confidence" value={formatConfidence(report.confidence)} />
         <Metric label="Liquidity" value={formatUsd(report.market?.liquidityUsd)} />
         <Metric label="24h Volume" value={formatUsd(report.market?.volume24h)} />
         <Metric label="DEX" value={report.market?.dex ?? "Unknown"} />
@@ -61,6 +62,8 @@ function ReportCard({ report }: { report: ScanReport }) {
       </div>
 
       <p className="lead">{report.summary}</p>
+
+      <ScoreBreakdown report={report} />
 
       <ul className="warning-list">
         {report.warnings.map((warning) => (
@@ -82,6 +85,27 @@ function ReportCard({ report }: { report: ScanReport }) {
   );
 }
 
+function ScoreBreakdown({ report }: { report: ScanReport }) {
+  if (report.warnings.length === 0) return null;
+
+  return (
+    <div className="score-breakdown">
+      <div className="breakdown-head">
+        <strong>Score breakdown</strong>
+        <span>{report.score}/100</span>
+      </div>
+      <div className="breakdown-list">
+        {report.warnings.map((warning) => (
+          <div className="breakdown-item" key={`${warning.severity}-${warning.title}`}>
+            <span>{warning.title}</span>
+            <strong>+{warningPoints(warning)}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="metric">
@@ -89,4 +113,18 @@ function Metric({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function formatConfidence(confidence: ScanReport["confidence"]) {
+  if (confidence === "HIGH") return "High";
+  if (confidence === "MEDIUM") return "Medium";
+  return "Limited data";
+}
+
+function warningPoints(warning: ScanReport["warnings"][number]) {
+  if (typeof warning.points === "number") return warning.points;
+  if (warning.severity === "CRITICAL") return 70;
+  if (warning.severity === "HIGH") return 45;
+  if (warning.severity === "MEDIUM") return 25;
+  return 10;
 }
