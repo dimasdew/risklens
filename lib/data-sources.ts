@@ -34,7 +34,7 @@ export async function fetchScanData(chain: Chain, address: string): Promise<Scan
     }),
     chain === "solana"
       ? fetchSolanaSecurity(address).catch(() => undefined).then((data) => {
-          if (data) sources.add("Solana RPC");
+          if (data) sources.add(isHeliusRpc() ? "Helius RPC" : "Solana RPC");
           return data;
         })
       : fetchGoPlusSecurity(chain, address).catch(() => undefined).then((data) => {
@@ -149,13 +149,13 @@ async function fetchSolanaSecurity(address: string): Promise<SolanaSecurityData 
 
 async function fetchHeliusActivity(address: string): Promise<SolanaSecurityData | undefined> {
   const apiKey = process.env.HELIUS_API_KEY;
-  if (!apiKey) return undefined;
+  if (!apiKey) return fetchHeliusRpcActivity(address);
 
   const response = await fetch(`https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`, {
     next: { revalidate: 20 }
   });
 
-  if (!response.ok) return undefined;
+  if (!response.ok) return fetchHeliusRpcActivity(address);
 
   const transactions = (await response.json()) as Array<{
     type?: string;
@@ -183,6 +183,22 @@ async function fetchHeliusActivity(address: string): Promise<SolanaSecurityData 
     recentActiveWallets: activeWallets.size,
     recentTransferWallets: transferWallets.size,
     recentSwapCount: swapCount
+  };
+}
+
+async function fetchHeliusRpcActivity(address: string): Promise<SolanaSecurityData | undefined> {
+  const rpcUrl = process.env.SOLANA_RPC_URL ?? getHeliusRpcUrl();
+  if (!rpcUrl) return undefined;
+
+  const signatures = await solanaRpc(rpcUrl, "getSignaturesForAddress", [address, { limit: 100 }]);
+  const result = signatures?.result;
+  if (!Array.isArray(result)) return undefined;
+
+  return {
+    recentTxCount: result.length,
+    recentActiveWallets: undefined,
+    recentTransferWallets: undefined,
+    recentSwapCount: undefined
   };
 }
 
@@ -346,6 +362,10 @@ function parseTax(value: unknown) {
 
 function getHeliusRpcUrl() {
   return process.env.HELIUS_API_KEY ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}` : undefined;
+}
+
+function isHeliusRpc() {
+  return Boolean((process.env.SOLANA_RPC_URL ?? getHeliusRpcUrl())?.includes("helius"));
 }
 
 function parseOptionalNumber(value: unknown) {
