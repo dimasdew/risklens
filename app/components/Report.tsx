@@ -7,9 +7,11 @@ import { getSecuritySignals } from "@/lib/signals";
 import type { ScanReport } from "@/lib/types";
 import { Metric } from "./Metric";
 import { ScoreBreakdown } from "./ScoreBreakdown";
+import { useToast } from "./Toast";
 
 export function Report({ report }: { report: ScanReport }) {
   const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
   const riskClass = `risk-badge risk-${report.riskLevel.toLowerCase()}`;
   const sharePath = report.reportId ? `/report/${report.reportId}` : undefined;
   const shareUrl = typeof window !== "undefined" && sharePath ? `${window.location.origin}${sharePath}` : sharePath;
@@ -18,6 +20,7 @@ export function Report({ report }: { report: ScanReport }) {
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
+    toast("Report link copied to clipboard.", "success");
     window.setTimeout(() => setCopied(false), 1600);
   }
 
