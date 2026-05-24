@@ -49,7 +49,7 @@ const [loading, setLoading] = useState(false);
     try {
       const response = await fetch("/api/scan", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-risklens-device-id": getDeviceId() },
         body: JSON.stringify({ chain, address })
       });
       const payload = await response.json();
@@ -311,4 +311,14 @@ function warningPoints(warning: ScanReport["warnings"][number]) {
 function shortAddress(address: string) {
   if (address.length <= 14) return address;
   return `${address.slice(0, 6)}...${address.slice(-6)}`;
+}
+
+function getDeviceId() {
+  const storageKey = "risklens_device_id";
+  const existing = window.localStorage.getItem(storageKey);
+  if (existing) return existing;
+
+  const deviceId = crypto.randomUUID();
+  window.localStorage.setItem(storageKey, deviceId);
+  return deviceId;
 }

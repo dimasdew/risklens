@@ -43,11 +43,14 @@ export async function POST(request: Request) {
 }
 
 function getClientIdentifier(request: Request) {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "anonymous"
-  );
+  const deviceId = request.headers.get("x-risklens-device-id")?.trim();
+  const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown-ip";
+
+  if (deviceId && /^[a-f0-9-]{32,40}$/i.test(deviceId)) {
+    return `device:${deviceId}:ip:${ipAddress}`;
+  }
+
+  return `ip:${ipAddress}`;
 }
 
 function isValidAddress(chain: Chain, address: string) {
