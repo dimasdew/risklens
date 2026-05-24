@@ -9,6 +9,7 @@ import { useAuth } from "./AuthProvider";
 import { Metric } from "./Metric";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { useToast } from "./Toast";
+import { track } from "@/lib/analytics";
 
 export function Report({ report }: { report: ScanReport }) {
   const [copied, setCopied] = useState(false);
@@ -108,6 +109,7 @@ export function Report({ report }: { report: ScanReport }) {
                     headers: { authorization: `Bearer ${token}` }
                   });
                   setWatchlisted(false);
+                  track("watchlist_removed", { chain: report.chain, address: report.address });
                   toast("Removed from watchlist.", "info");
                 } else {
                   await fetch("/api/watchlist", {
@@ -116,6 +118,7 @@ export function Report({ report }: { report: ScanReport }) {
                     body: JSON.stringify({ chain: report.chain, address: report.address, tokenName: report.tokenName, tokenSymbol: report.tokenSymbol })
                   });
                   setWatchlisted(true);
+                  track("watchlist_added", { chain: report.chain, address: report.address });
                   toast("Added to watchlist.", "success");
                 }
               }}

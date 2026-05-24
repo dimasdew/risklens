@@ -29,12 +29,14 @@ Every scan generates a shareable report URL (`/report/{id}`).
 - Account-based scan history
 - Account-based scan limits (logged-in users tracked by user_id)
 - Forgot password / reset password flow
-- Protected routes via proxy middleware
+- Client-side protected dashboard (no middleware dependency on cookies)
 
 **Watchlist**
 - Save tokens to personal watchlist
 - Add/remove from report or dashboard
-- Foundation for future alert system
+- Score delta tracking (score changed since last scan)
+- Rescan from watchlist
+- Lazy event detection (score changes recorded on dashboard load)
 
 **Pro Waitlist**
 - Waitlist capture modal from pricing CTAs
@@ -42,8 +44,10 @@ Every scan generates a shareable report URL (`/report/{id}`).
 
 **Dashboard**
 - Personal scan history
-- Watchlist management
+- Watchlist management with score tracking
+- Watchlist score change events
 - Account info and actions
+- Scan usage counter (x/50 today)
 
 **UX**
 - Responsive mobile nav (hamburger menu)
@@ -93,11 +97,15 @@ ALCHEMY_API_KEY=your-alchemy-api-key
 # Supabase (server-side)
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your-publishable-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Required in production
 
 # Supabase (client-side, for auth)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+
+# Optional analytics (PostHog free tier)
+NEXT_PUBLIC_POSTHOG_KEY=phc_your-key
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is used for server-side writes (reports, scan usage, waitlist, watchlist). Never expose it with a `NEXT_PUBLIC_` prefix.
@@ -124,9 +132,10 @@ app/
   reset-password/page.tsx     # Reset password
   report/[id]/page.tsx        # Shareable report page
   api/scan/route.ts           # Scan API
-  api/reports/route.ts        # Reports listing API
+  api/scan-usage/route.ts     # Scan usage counter API
+  api/reports/route.ts        # Reports listing API (hybrid: personal/global)
   api/waitlist/route.ts       # Pro waitlist API
-  api/watchlist/route.ts      # Watchlist CRUD API
+  api/watchlist/route.ts      # Watchlist CRUD + enrichment + lazy events
   auth/callback/route.ts      # Supabase auth callback
   components/
     Navbar.tsx                # Auth-aware nav with hamburger
@@ -144,27 +153,28 @@ lib/
   scan-limit.ts               # Scan limit enforcement
   rate-limit.ts               # Burst rate limiter
   types.ts                    # Shared types
-proxy.ts                      # Auth middleware (protected routes)
+  analytics.ts                # PostHog analytics wrapper
+proxy.ts                      # Auth middleware (redirects logged-in users from auth pages)
 supabase/
-  schema.sql                  # Initial schema
-  migrations/
-    002_waitlist_watchlist.sql # Waitlist, watchlist, RLS hardening
+  schema.sql                  # Canonical schema (all tables, RLS, RPC)
 ```
 
 ## Supabase Setup
 
 1. Create a Supabase project
-2. Run `supabase/schema.sql` in the SQL editor
-3. Run `supabase/migrations/002_waitlist_watchlist.sql`
-4. Enable email auth in Authentication > Providers
-5. Set environment variables in `.env.local` and Vercel
-6. Restart dev server
+2. Run `supabase/schema.sql` in the SQL editor (single file, includes everything)
+3. Enable email auth in Authentication > Providers
+4. Set environment variables in `.env.local` and Vercel
+5. Restart dev server
+
+**Tables:** scan_reports, scan_usage, waitlist_signups, watchlist, watchlist_events
 
 **RLS policies:**
 - `scan_reports`: public read, service-role-only write
 - `scan_usage`: service-role-only
 - `waitlist_signups`: service-role-only
 - `watchlist`: user can only access their own rows
+- `watchlist_events`: user can only read/update their own events
 
 ## Business Model
 
@@ -174,8 +184,9 @@ supabase/
 
 ## Roadmap
 
-- v1: Web scanner + auth + waitlist ✅ (current)
-- v2: Watchlist alerts (liquidity, authority, risk score changes)
+- v1: Web scanner + auth + waitlist + analytics ✅ (current)
+- v1.5: Watchlist score tracking + lazy events ✅ (current)
+- v2: Watchlist push alerts (email/Telegram for risk score changes)
 - v3: Telegram bot for communities
 - v4: Trending token risk feed
 - v5: Public risk API for wallets, bots, dashboards

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useToast } from "./Toast";
+import { track } from "@/lib/analytics";
 
 type WaitlistModalProps = {
   plan: string;
@@ -32,6 +33,7 @@ export function WaitlistModal({ plan, onClose }: WaitlistModalProps) {
         return;
       }
 
+      track("waitlist_submitted", { plan, email });
       toast("You're on the waitlist! We'll be in touch.", "success");
       onClose();
     } catch {

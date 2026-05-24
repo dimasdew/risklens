@@ -9,6 +9,7 @@ import { Navbar } from "../components/Navbar";
 import { RecentScans } from "../components/RecentScans";
 import { Report } from "../components/Report";
 import { WaitlistModal } from "../components/WaitlistModal";
+import { track } from "@/lib/analytics";
 
 const scanSteps = ["Reading market data", "Checking authorities", "Analyzing holders", "Calculating risk"];
 
@@ -83,6 +84,7 @@ export default function ScanPage() {
     setReport(null);
     setScanStep(0);
     setLoading(true);
+    track("scan_started", { chain, address });
 
     try {
       const headers: Record<string, string> = {
@@ -110,10 +112,14 @@ export default function ScanPage() {
       }
 
       setReport(payload);
+      track("scan_completed", { chain, address, score: payload.score, riskLevel: payload.riskLevel });
       await loadRecentReports();
       await loadScanUsage();
     } catch (scanError) {
-      setError(scanError instanceof Error ? scanError.message : "Scan failed.");
+      const msg = scanError instanceof Error ? scanError.message : "Scan failed.";
+      track("scan_failed", { chain, address, error: msg });
+      if (msg.includes("limit reached")) track("limit_hit", { chain });
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -145,3 +145,37 @@ create policy "Users can delete own watchlist"
   for delete
   to authenticated
   using (auth.uid() = user_id);
+
+-- ─── Watchlist events (lazy-evaluated score changes) ──────────────────
+create table if not exists watchlist_events (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null,
+  chain text not null,
+  address text not null,
+  event_type text not null default 'score_change',
+  previous_score integer,
+  new_score integer,
+  previous_risk_level text,
+  new_risk_level text,
+  detected_at timestamptz default now(),
+  dismissed boolean default false
+);
+
+create index if not exists idx_watchlist_events_user on watchlist_events(user_id, dismissed, detected_at desc);
+
+alter table watchlist_events enable row level security;
+
+drop policy if exists "Users can read own events" on watchlist_events;
+create policy "Users can read own events"
+  on watchlist_events
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can update own events" on watchlist_events;
+create policy "Users can update own events"
+  on watchlist_events
+  for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
