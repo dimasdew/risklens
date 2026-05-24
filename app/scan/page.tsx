@@ -23,7 +23,7 @@ export default function ScanPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [scanStep, setScanStep] = useState(0);
-  const [scanUsage, setScanUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [scanUsage, setScanUsage] = useState<{ used: number; limit: number; tier?: string } | null>(null);
   const [showWaitlist, setShowWaitlist] = useState(false);
 
   useEffect(() => {
@@ -174,10 +174,14 @@ export default function ScanPage() {
             </div>
           ) : null}
           <p className="hint">
-            {scanUsage ? `${scanUsage.used}/${scanUsage.limit} scans used today. ` : ""}
+            {scanUsage && scanUsage.tier !== "free" ? (
+              <span className="tier-badge tier-badge-pro">{scanUsage.tier === "admin" ? "Admin" : "Pro"} - Unlimited scans</span>
+            ) : scanUsage ? (
+              `${scanUsage.used}/${scanUsage.limit} scans used today. `
+            ) : ""}
             Results are automated risk signals and not financial advice.
           </p>
-          {scanUsage && scanUsage.used >= 40 && (
+          {scanUsage && scanUsage.tier === "free" && scanUsage.used >= 40 && (
             <div className="near-limit-cta">
               Running low on free scans.{" "}
               <button type="button" className="near-limit-link" onClick={() => setShowWaitlist(true)}>

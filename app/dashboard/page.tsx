@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tier, setTier] = useState<string>("free");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -70,8 +71,24 @@ export default function DashboardPage() {
       } catch { /* ignore */ }
     }
 
+    async function loadTier() {
+      try {
+        const { data: session } = await getSupabaseBrowserClient().auth.getSession();
+        const headers: Record<string, string> = {};
+        if (session.session?.access_token) {
+          headers.authorization = `Bearer ${session.session.access_token}`;
+        }
+        const response = await fetch("/api/scan-usage", { headers });
+        if (response.ok) {
+          const payload = await response.json();
+          setTier(payload.tier ?? "free");
+        }
+      } catch { /* ignore */ }
+    }
+
     void loadReports();
     void loadWatchlist();
+    void loadTier();
   }, []);
 
   async function removeFromWatchlist(chain: string, address: string) {
@@ -110,7 +127,7 @@ export default function DashboardPage() {
 
       <section className="dashboard-header">
         <div>
-          <p className="eyebrow">Dashboard</p>
+          <p className="eyebrow">Dashboard {tier !== "free" && <span className="tier-badge tier-badge-pro">{tier === "admin" ? "Admin" : "Pro"}</span>}</p>
           <h1 className="auth-title">Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h1>
           <p className="auth-subtitle">Manage your account and view your scan history.</p>
         </div>

@@ -179,3 +179,20 @@ create policy "Users can update own events"
   to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ─── User tiers (free / pro / admin) ──────────────────────────────────
+create table if not exists user_tiers (
+  user_id uuid primary key,
+  tier text not null default 'free' check (tier in ('free', 'pro', 'admin')),
+  scan_limit integer not null default 50,
+  updated_at timestamptz default now()
+);
+
+alter table user_tiers enable row level security;
+
+drop policy if exists "Users can read own tier" on user_tiers;
+create policy "Users can read own tier"
+  on user_tiers
+  for select
+  to authenticated
+  using (auth.uid() = user_id);

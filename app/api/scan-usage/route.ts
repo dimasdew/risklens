@@ -1,17 +1,24 @@
 import { NextResponse } from "next/server";
 import { isSupabaseConfigured, getSupabaseServerClient } from "@/lib/supabase-server";
+import { getUserTier } from "@/lib/user-tier";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
 
-const freeScanLimit = 50;
+const defaultScanLimit = 50;
 
 export async function GET(request: Request) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ used: 0, limit: freeScanLimit });
+  const userId = await extractUserId(request);
+  const tierInfo = await getUserTier(userId);
+
+  // Pro/admin: unlimited, no need to check usage
+  if (tierInfo.tier === "pro" || tierInfo.tier === "admin") {
+    return NextResponse.json({ used: 0, limit: tierInfo.scanLimit, tier: tierInfo.tier });
   }
 
-  // Check if user is authenticated — use user:${id} as identifier (same as /api/scan)
-  const userId = await extractUserId(request);
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ used: 0, limit: defaultScanLimit, tier: "free" });
+  }
+
   const rawId = userId ? `user:${userId}` : getClientIdentifier(request);
   const identifierHash = createHash("sha256").update(rawId).digest("hex");
   const usageDate = new Date().toISOString().split("T")[0];
@@ -22,7 +29,8 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     used: Number(data?.scan_count ?? 0),
-    limit: freeScanLimit
+    limit: tierInfo.scanLimit,
+    tier: tierInfo.tier
   });
 }
 

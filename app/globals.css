@@ -1147,6 +1147,24 @@ h1 {
   background: rgba(255, 101, 125, 0.08);
 }
 
+/* ── Tier badge ── */
+.tier-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.tier-badge-pro {
+  background: linear-gradient(135deg, rgba(72, 245, 164, 0.2), rgba(72, 200, 245, 0.2));
+  color: var(--green);
+  border: 1px solid rgba(72, 245, 164, 0.3);
+}
+
 /* ── Near-limit CTA ── */
 .near-limit-cta {
   margin-top: 12px;
