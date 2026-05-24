@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
 import { chainLabels } from "@/lib/chains";
 import type { Chain, ReportSummary, ScanReport } from "@/lib/types";
+import { Navbar } from "../components/Navbar";
 import { RecentScans } from "../components/RecentScans";
 import { Report } from "../components/Report";
 
@@ -70,17 +70,7 @@ export default function ScanPage() {
 
   return (
     <main className="shell compact-shell">
-      <nav className="nav">
-        <Link className="brand brand-link" href="/">
-          <span className="logo">RL</span>
-          <span>RiskLens</span>
-        </Link>
-        <div className="nav-links">
-          <Link href="/#features" className="nav-link">Features</Link>
-          <Link href="/#pricing" className="nav-link">Pricing</Link>
-          <span className="tag">Scanner</span>
-        </div>
-      </nav>
+      <Navbar />
 
       <section className="scan-hero">
         <div className="scan-hero-text">

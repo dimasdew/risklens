@@ -1,23 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { PricingSection } from "./components/PricingSection";
+import { Navbar } from "./components/Navbar";
 
 export default function Home() {
   return (
     <main>
       {/* ── Navbar ── */}
       <div className="shell">
-        <nav className="nav">
-          <div className="brand">
-            <span className="logo">RL</span>
-            <span>RiskLens</span>
-          </div>
-          <div className="nav-links">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#how-it-works" className="nav-link">How it works</a>
-            <a href="#pricing" className="nav-link">Pricing</a>
-            <Link href="/scan" className="nav-cta">Launch Scanner</Link>
-          </div>
-        </nav>
+        <Navbar variant="landing" />
       </div>
 
       {/* ── Hero ── */}
