@@ -14,7 +14,7 @@ function addWarning(warnings: Warning[], warning: Warning) {
 function levelFromScore(score: number): RiskLevel {
   if (score >= 85) return "CRITICAL";
   if (score >= 60) return "HIGH";
-  if (score >= 30) return "MEDIUM";
+  if (score >= 25) return "MEDIUM";
   return "LOW";
 }
 
@@ -28,6 +28,7 @@ function scoreWarnings(warnings: Warning[]) {
 export function buildRiskReport(data: ScanData): ScanReport {
   const warnings: Warning[] = [];
   const liquidity = data.market?.liquidityUsd ?? 0;
+  const hasUnknownLiquidity = Boolean(data.market?.pairAddress && !data.market?.liquidityUsd);
   const ageHours = data.market?.pairAgeHours;
 
   if (data.chain === "solana") {
@@ -124,12 +125,30 @@ export function buildRiskReport(data: ScanData): ScanReport {
     });
   }
 
+  if (hasUnknownLiquidity) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "Liquidity is not verified",
+      explanation: "RiskLens found a trading pair, but the data source did not return a verified USD liquidity value.",
+      recommendation: "Check the pool or bonding curve manually before buying, especially for newly launched tokens."
+    });
+  }
+
   if (typeof ageHours === "number" && ageHours < 24) {
     addWarning(warnings, {
       severity: "MEDIUM",
       title: "Very new trading pair",
       explanation: `The main pair appears to be about ${Math.max(1, Math.round(ageHours))} hour(s) old.`,
       recommendation: "New tokens have limited history. Wait for more trading data if possible."
+    });
+  }
+
+  if (data.chain === "solana" && data.market?.dex?.toLowerCase() === "pumpfun" && typeof ageHours === "number" && ageHours < 24) {
+    addWarning(warnings, {
+      severity: "MEDIUM",
+      title: "New pump.fun launch",
+      explanation: "This token appears to be trading on pump.fun and has limited market history.",
+      recommendation: "Treat this as speculative until the token has deeper liquidity, holder history, and post-migration trading data."
     });
   }
 
