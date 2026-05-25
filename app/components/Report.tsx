@@ -74,10 +74,13 @@ export function Report({ report }: { report: ScanReport }) {
 
       <ul className="warning-list">
         {report.warnings.map((warning) => (
-          <li className="warning" key={`${warning.severity}-${warning.title}`}>
-            <strong>{warning.title}</strong>
+          <li className={`warning warning-${warning.severity.toLowerCase()}`} key={`${warning.severity}-${warning.title}`}>
+            <div className="warning-header">
+              <span className={`warning-severity warning-severity-${warning.severity.toLowerCase()}`}>{warning.severity}</span>
+              <strong>{warning.title}</strong>
+            </div>
             <p>{warning.explanation}</p>
-            <p>{warning.recommendation}</p>
+            <p className="warning-rec">{warning.recommendation}</p>
           </li>
         ))}
       </ul>
