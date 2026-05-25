@@ -196,3 +196,35 @@ create policy "Users can read own tier"
   for select
   to authenticated
   using (auth.uid() = user_id);
+
+-- ─── User profiles ──────────────────────────────────────────────────────
+create table if not exists user_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  username text not null,
+  updated_at timestamptz default now(),
+  unique (username)
+);
+
+alter table user_profiles enable row level security;
+
+drop policy if exists "Users can read own profile" on user_profiles;
+create policy "Users can read own profile"
+  on user_profiles
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can update own profile" on user_profiles;
+create policy "Users can update own profile"
+  on user_profiles
+  for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own profile" on user_profiles;
+create policy "Users can insert own profile"
+  on user_profiles
+  for insert
+  to authenticated
+  with check (auth.uid() = user_id);

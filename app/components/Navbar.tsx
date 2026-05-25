@@ -50,9 +50,12 @@ export function Navbar({ variant = "app" }: NavbarProps) {
             <div className="nav-user">
               <Link href="/dashboard" className="nav-link" onClick={() => setMenuOpen(false)}>Dashboard</Link>
               <Link href="/scan" className="nav-cta" onClick={() => setMenuOpen(false)}>Scanner</Link>
-              <button className="nav-user-btn" onClick={() => { signOut(); setMenuOpen(false); }} type="button">
+              <Link href="/profile" className="nav-user-btn" onClick={() => setMenuOpen(false)}>
                 {user.email?.split("@")[0] ?? "Account"}
                 <span className="nav-user-dot"></span>
+              </Link>
+              <button className="nav-logout-btn" onClick={() => { signOut(); setMenuOpen(false); }} type="button" aria-label="Sign out">
+                Sign out
               </button>
             </div>
           ) : (
