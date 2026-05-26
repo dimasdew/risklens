@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured, getSupabaseServerClient } from "@/lib/supabase-server";
+import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
+
+function getIp(request: Request) {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
 
 export async function GET(request: Request) {
+  const rl = checkRateLimit(getIp(request), "api");
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: getRateLimitHeaders(rl) });
+  }
   const userId = await extractUserId(request);
   if (!userId) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
@@ -85,6 +94,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const rlPost = checkRateLimit(getIp(request), "api");
+  if (!rlPost.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: getRateLimitHeaders(rlPost) });
+  }
   const userId = await extractUserId(request);
   if (!userId) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
@@ -130,6 +143,10 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const rlDel = checkRateLimit(getIp(request), "api");
+  if (!rlDel.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: getRateLimitHeaders(rlDel) });
+  }
   const userId = await extractUserId(request);
   if (!userId) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 

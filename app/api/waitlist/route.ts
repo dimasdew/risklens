@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { isSupabaseConfigured, getSupabaseServerClient } from "@/lib/supabase-server";
+import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = checkRateLimit(ip, "auth");
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: getRateLimitHeaders(rl) });
+    }
     const body = (await request.json()) as {
       email?: string;
       plan?: string;

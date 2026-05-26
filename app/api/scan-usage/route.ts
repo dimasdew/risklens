@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { isSupabaseConfigured, getSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserTier } from "@/lib/user-tier";
+import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
 
 const defaultScanLimit = 50;
 
 export async function GET(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rl = checkRateLimit(ip, "api");
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: getRateLimitHeaders(rl) });
+  }
   const userId = await extractUserId(request);
   const tierInfo = await getUserTier(userId);
 

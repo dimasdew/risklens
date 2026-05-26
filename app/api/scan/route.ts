@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchScanData } from "@/lib/data-sources";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 import { saveReport } from "@/lib/report-store";
 import { buildRiskReport } from "@/lib/risk-engine";
 import { checkAndIncrementScanLimit } from "@/lib/scan-limit";
@@ -26,17 +26,11 @@ export async function POST(request: Request) {
     }
 
     const clientIp = getClientIp(request);
-    const burst = checkRateLimit(clientIp);
+    const burst = checkRateLimit(clientIp, "scan");
     if (!burst.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Please wait a moment and try again." },
-        {
-          status: 429,
-          headers: {
-            "retry-after": String(Math.ceil((burst.resetAt - Date.now()) / 1000)),
-            "x-ratelimit-remaining": "0"
-          }
-        }
+        { status: 429, headers: getRateLimitHeaders(burst) }
       );
     }
 
